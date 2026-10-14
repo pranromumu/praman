@@ -79,3 +79,29 @@ def test_7_resolver_remains_unchanged():
     params = list(sig.parameters.values())
     assert len(params) == 1
     assert params[0].name == "sources"
+
+
+def test_environment_overrides_yaml_when_cli_does_not_override(monkeypatch, tmp_path):
+    yaml_content = """
+environments:
+  staging:
+    base_url: "https://staging.example.com"
+    browser: chromium
+    headless: true
+    timeout: 30000
+"""
+    yaml_file = tmp_path / "qa-engine.yaml"
+    yaml_file.write_text(yaml_content, encoding="utf-8")
+
+    monkeypatch.setenv("PRAMAN_BROWSER", "firefox")
+
+    sources = build_standard_pipeline(
+        file_path=str(yaml_file),
+        env=Environment.STAGING,
+        cli_args=[],
+    )
+
+    result = resolve_config(sources)
+
+    assert result["browser"] == "firefox"
+    assert result["base_url"] == "https://staging.example.com"
