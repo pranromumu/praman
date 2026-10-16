@@ -114,8 +114,13 @@ environments:
     vs = VersionedSource(source=LegacyV1Source(), source_version=1, supported_versions=[1, 2])
     
     with patch("framework.config.composition.negotiate_contract") as mock_negotiate:
-        # FIXED: Return a MagicMock to avoid V2ToNormalizedProvider type errors
         mock_negotiate.return_value = MagicMock()
+        mock_negotiate.return_value.get_config.return_value = {
+            "base_url": "https://staging.com",
+            "browser": "chromium",
+            "headless": True,
+            "timeout": 30000,
+        }
         resolve_praman_config(
             versioned_source=vs,
             praman_supported_versions=[2],

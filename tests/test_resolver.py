@@ -273,3 +273,23 @@ def test_optional_failure_logs_warning(caplog):
         ])
     assert result == {}
     assert "Optional configuration source" in caplog.text
+
+def test_optional_source_returning_none_does_not_stop_resolution():
+    invalid_source = FakeConfigSource(None)
+    valid_source = LowPrioritySource()
+
+    result = resolve_config([
+        SourceSpec(
+            source=invalid_source,
+            failure_policy=FailurePolicy.OPTIONAL,
+        ),
+        SourceSpec(
+            source=valid_source,
+            failure_policy=FailurePolicy.REQUIRED,
+        ),
+    ])
+
+    assert result == {
+        "browser": "chromium",
+        "timeout": 30000,
+    }
