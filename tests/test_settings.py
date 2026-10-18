@@ -614,6 +614,21 @@ def test_from_config_valid_config_returns_settings():
     assert settings.HEADLESS is True
     assert settings.TIMEOUT == 30000
 
+def test_from_config_numeric_base_url_raises_error():
+    config = {
+        "base_url": 123,
+        "browser": "chromium",
+        "headless": True,
+        "timeout": 30000,
+    }
+
+    with pytest.raises(
+        ValueError,
+        match=r"BASE_URL must be a string",
+    ):
+        Settings.from_config(config)
+
+
 def test_from_config_valid_version_policy_is_applied():
     config = {
         "base_url": "https://example.com",

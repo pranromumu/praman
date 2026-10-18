@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from xml.parsers.expat import errors
 from framework.config.environment import Environment
 from framework.config.resolver import resolve_config
 from framework.config.pipeline_builder import build_standard_pipeline
@@ -22,7 +23,11 @@ class Settings:
     ) -> list[str]:
         errors = []
         
-        if not self.BASE_URL:
+        if not isinstance(self.BASE_URL, str):
+            errors.append(
+                f"BASE_URL must be a string, but got {type(self.BASE_URL).__name__}."
+            )
+        elif not self.BASE_URL.strip():
             errors.append("BASE_URL cannot be empty.")
             
         supported_browsers = ["chromium", "firefox", "webkit"]
