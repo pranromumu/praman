@@ -629,6 +629,21 @@ def test_from_config_numeric_base_url_raises_error():
         Settings.from_config(config)
 
 
+def test_from_config_whitespace_base_url_raises_error():
+    config = {
+        "base_url": "   ",
+        "browser": "chromium",
+        "headless": True,
+        "timeout": 30000,
+    }
+
+    with pytest.raises(
+        ValueError,
+        match=r"BASE_URL cannot be empty",
+    ):
+        Settings.from_config(config)
+
+
 def test_from_config_valid_version_policy_is_applied():
     config = {
         "base_url": "https://example.com",
