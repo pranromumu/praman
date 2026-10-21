@@ -453,3 +453,20 @@ def test_yaml_source_reads_updated_file_contents(tmp_path):
     second_config = source.get_config()
 
     assert second_config["timeout"] == 20000
+
+def test_yaml_source_returns_fresh_configuration_dict(tmp_path):
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(
+        "environments:\n  staging:\n    timeout: 10000\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    first_config = source.get_config()
+    first_config["timeout"] = 99999
+
+    second_config = source.get_config()
+
+    assert second_config["timeout"] == 10000
+    assert second_config is not first_config
