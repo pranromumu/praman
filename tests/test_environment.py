@@ -9,6 +9,7 @@ def test_from_string_returns_staging_environment():
 
     assert result is Environment.STAGING
 
+
 @pytest.mark.parametrize(
     "env_name",
     [
@@ -47,9 +48,20 @@ def test_from_string_rejects_non_string_input(invalid_name):
     ):
         Environment.from_string(invalid_name)
 
-def test_from_string_rejects_empty_environment_name():
+
+@pytest.mark.parametrize(
+    "env_name",
+    [
+        "",
+        " ",
+        "   ",
+        "\t",
+        "\n",
+    ],
+)
+def test_from_string_rejects_empty_environment_name(env_name):
     with pytest.raises(
         ValueError,
         match="Environment name must not be empty",
     ):
-        Environment.from_string("")
+        Environment.from_string(env_name)
