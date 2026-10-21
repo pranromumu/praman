@@ -43,6 +43,25 @@ environments:
     assert config["headless"] is False
     assert config["timeout"] == 30000
 
+
+def test_utf8_bom_configuration_loads_successfully(tmp_path):
+    yaml_content = """environments:
+  staging:
+    base_url: "https://staging.client.com"
+    headless: true
+    timeout: 30000
+"""
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(yaml_content, encoding="utf-8-sig")
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+    config = source.get_config()
+
+    assert config["base_url"] == "https://staging.client.com"
+    assert config["headless"] is True
+    assert config["timeout"] == 30000
+
+
 def test_missing_file_raises_error(tmp_path):
     source = YAMLSource(str(tmp_path / "nonexistent.yaml"), Environment.STAGING)
     
