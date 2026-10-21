@@ -133,6 +133,28 @@ environments:
     }
     assert config["retries"] == {"count": 3}
 
+def test_yaml_scalar_types_are_preserved(tmp_path):
+    yaml_content = """
+environments:
+  staging:
+    enabled: true
+    retries: 3
+    threshold: 0.75
+    label: "staging"
+"""
+    temp_file = tmp_path / "scalar-types.yaml"
+    temp_file.write_text(yaml_content, encoding="utf-8")
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+    config = source.get_config()
+
+    assert config["enabled"] is True
+    assert type(config["retries"]) is int
+    assert config["retries"] == 3
+    assert type(config["threshold"]) is float
+    assert config["threshold"] == 0.75
+    assert config["label"] == "staging"
+
 def test_utf8_bom_configuration_loads_successfully(tmp_path):
     yaml_content = """environments:
   staging:
