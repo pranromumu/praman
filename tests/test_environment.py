@@ -5,6 +5,17 @@ from framework.config.environment import Environment
 
 
 @pytest.mark.parametrize(
+    ("environment", "expected_value"),
+    [
+        (Environment.DEVELOPMENT, "development"),
+        (Environment.STAGING, "staging"),
+        (Environment.PRODUCTION, "production"),
+    ],
+)
+def test_environment_enum_values_are_stable(environment, expected_value):
+    assert environment.value == expected_value
+
+@pytest.mark.parametrize(
     ("env_name", "expected"),
     [
         ("development", Environment.DEVELOPMENT),
