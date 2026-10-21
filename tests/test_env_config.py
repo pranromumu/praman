@@ -43,6 +43,25 @@ def test_headless_false_string_converted_to_bool(monkeypatch):
     assert result == {"headless": False}
     assert isinstance(result["headless"], bool)
 
+@pytest.mark.parametrize(
+    ("headless_value", "expected"),
+    [
+        ("TRUE", True),
+        ("FALSE", False),
+        ("TrUe", True),
+    ],
+)
+def test_headless_parsing_is_case_insensitive(
+    monkeypatch,
+    headless_value,
+    expected,
+):
+    monkeypatch.setenv("PRAMAN_HEADLESS", headless_value)
+
+    result = parse_environment_variables()
+
+    assert result == {"headless": expected}
+
 def test_invalid_headless_raises_error(monkeypatch):
     monkeypatch.setenv("PRAMAN_HEADLESS", "yes")
     with pytest.raises(ValueError, match="Invalid value for PRAMAN_HEADLESS"):
