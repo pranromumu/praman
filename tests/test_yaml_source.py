@@ -107,6 +107,32 @@ environments:
         "timeout": 30000,
     }
 
+def test_nested_configuration_values_are_preserved(tmp_path):
+    yaml_content = """
+environments:
+  staging:
+    base_url: "https://staging.client.com"
+    browser:
+      name: chromium
+      options:
+        - headless
+        - slow_mo
+    retries:
+      count: 3
+"""
+    temp_file = tmp_path / "nested-staging.yaml"
+    temp_file.write_text(yaml_content, encoding="utf-8")
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+    config = source.get_config()
+
+    assert config["base_url"] == "https://staging.client.com"
+    assert config["browser"] == {
+        "name": "chromium",
+        "options": ["headless", "slow_mo"],
+    }
+    assert config["retries"] == {"count": 3}
+
 def test_utf8_bom_configuration_loads_successfully(tmp_path):
     yaml_content = """environments:
   staging:
