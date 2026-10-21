@@ -700,3 +700,17 @@ def test_non_string_browser_is_rejected():
         match="BROWSER must be a string",
     ):
         settings.validate()
+
+def test_non_boolean_headless_is_rejected():
+    settings = Settings(
+        BASE_URL="https://example.com",
+        BROWSER="chromium",
+        HEADLESS="yes",
+        TIMEOUT=30000,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="HEADLESS must be a boolean",
+    ):
+        settings.validate()
