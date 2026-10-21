@@ -141,8 +141,16 @@ def test_invalid_headless_raises_error(monkeypatch, headless_value):
         parse_environment_variables()
 
 
-def test_invalid_timeout_raises_error(monkeypatch):
-    monkeypatch.setenv("PRAMAN_TIMEOUT", "abc")
+@pytest.mark.parametrize(
+    "timeout_value",
+    [
+        "abc",
+        "30.5",
+        "1e3",
+    ],
+)
+def test_invalid_timeout_raises_error(monkeypatch, timeout_value):
+    monkeypatch.setenv("PRAMAN_TIMEOUT", timeout_value)
 
     with pytest.raises(
         ValueError,
