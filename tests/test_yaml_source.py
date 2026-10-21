@@ -81,6 +81,21 @@ def test_empty_file_raises_error(tmp_path):
     ):
         source.get_config()
 
+def test_comment_only_file_raises_error(tmp_path):
+    temp_file = tmp_path / "comments.yaml"
+    temp_file.write_text(
+        "# Praman configuration\n# No configuration values provided\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Configuration file .* is empty\.",
+    ):
+        source.get_config()
+
 
 def test_invalid_yaml_raises_error(tmp_path):
     yaml_content = """
