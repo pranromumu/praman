@@ -43,6 +43,26 @@ environments:
     assert config["headless"] is False
     assert config["timeout"] == 30000
 
+def test_multiple_environments_return_requested_configuration(tmp_path):
+    yaml_content = """
+environments:
+  staging:
+    base_url: "https://staging.client.com"
+    timeout: 30000
+  development:
+    base_url: "https://dev.client.com"
+    timeout: 10000
+"""
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(yaml_content, encoding="utf-8")
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+    config = source.get_config()
+
+    assert config["base_url"] == "https://staging.client.com"
+    assert config["timeout"] == 30000
+    assert "development" not in config
+
 
 def test_utf8_bom_configuration_loads_successfully(tmp_path):
     yaml_content = """environments:
