@@ -145,6 +145,21 @@ def test_invalid_environments_type_raises_error(tmp_path):
     with pytest.raises(ValueError, match="Missing or invalid 'environments' key"):
         source.get_config()
 
+def test_null_environments_raises_clear_error(tmp_path):
+    temp_file = tmp_path / "null-environments.yaml"
+    temp_file.write_text(
+        "environments: null\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Missing or invalid 'environments' key",
+    ):
+        source.get_config()
+
 
 def test_root_list_raises_clear_error(tmp_path):
     temp_file = tmp_path / "root-list.yaml"
