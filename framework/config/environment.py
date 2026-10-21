@@ -7,6 +7,9 @@ class Environment(Enum):
 
     @classmethod
     def from_string(cls, env_name: str) -> "Environment":
+        if not isinstance(env_name, str):
+            raise ValueError("Environment name must be a string")
+
         normalized_name = env_name.lower().strip()
         for env in cls:
             if env.value == normalized_name:
