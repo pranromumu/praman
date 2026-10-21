@@ -20,7 +20,7 @@ def parse_environment_variables() -> dict:
     # 3. Headless (Boolean)
     headless = os.getenv("PRAMAN_HEADLESS")
     if headless is not None:
-        lower_headless = headless.lower()
+        lower_headless = headless.strip().lower()
         if lower_headless == "true":
             overrides["headless"] = True
         elif lower_headless == "false":

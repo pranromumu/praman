@@ -62,6 +62,25 @@ def test_headless_parsing_is_case_insensitive(
 
     assert result == {"headless": expected}
 
+@pytest.mark.parametrize(
+    ("headless_value", "expected"),
+    [
+        (" true ", True),
+        (" false ", False),
+        ("\tTRUE\n", True),
+    ],
+)
+def test_headless_parsing_trims_surrounding_whitespace(
+    monkeypatch,
+    headless_value,
+    expected,
+):
+    monkeypatch.setenv("PRAMAN_HEADLESS", headless_value)
+
+    result = parse_environment_variables()
+
+    assert result == {"headless": expected}
+
 def test_invalid_headless_raises_error(monkeypatch):
     monkeypatch.setenv("PRAMAN_HEADLESS", "yes")
     with pytest.raises(ValueError, match="Invalid value for PRAMAN_HEADLESS"):
