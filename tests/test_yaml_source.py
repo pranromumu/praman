@@ -470,3 +470,31 @@ def test_yaml_source_returns_fresh_configuration_dict(tmp_path):
 
     assert second_config["timeout"] == 10000
     assert second_config is not first_config
+
+def test_yaml_source_instances_select_environments_independently(tmp_path):
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(
+        "environments:\n"
+        "  staging:\n"
+        "    base_url: 'https://staging.example.com'\n"
+        "    timeout: 10000\n"
+        "  development:\n"
+        "    base_url: 'https://dev.example.com'\n"
+        "    timeout: 5000\n",
+        encoding="utf-8",
+    )
+
+    staging_source = YAMLSource(str(temp_file), Environment.STAGING)
+    development_source = YAMLSource(str(temp_file), Environment.DEVELOPMENT)
+
+    staging_config = staging_source.get_config()
+    development_config = development_source.get_config()
+
+    assert staging_config["base_url"] == "https://staging.example.com"
+    assert staging_config["timeout"] == 10000
+
+    assert development_config["base_url"] == "https://dev.example.com"
+    assert development_config["timeout"] == 5000
+
+    # Reading development must not change staging's configuration.
+    assert staging_source.get_config()["timeout"] == 10000
