@@ -432,3 +432,24 @@ environments:
     # Prove it inherits from ConfigSource
     from framework.contracts.config_source import ConfigSource
     assert isinstance(source, ConfigSource)
+
+def test_yaml_source_reads_updated_file_contents(tmp_path):
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(
+        "environments:\n  staging:\n    timeout: 10000\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    first_config = source.get_config()
+    assert first_config["timeout"] == 10000
+
+    temp_file.write_text(
+        "environments:\n  staging:\n    timeout: 20000\n",
+        encoding="utf-8",
+    )
+
+    second_config = source.get_config()
+
+    assert second_config["timeout"] == 20000
