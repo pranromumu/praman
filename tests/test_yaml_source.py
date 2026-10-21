@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -600,3 +600,4 @@ def test_yaml_source_propagates_file_open_oserror(tmp_path, monkeypatch):
 
     with pytest.raises(OSError, match="Simulated file access failure"):
         source.get_config()
+

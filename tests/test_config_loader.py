@@ -24,3 +24,13 @@ def test_missing_config_raises_error():
         
     # Verify the error message is clear and helpful for the client
     assert "Praman configuration file not found" in str(exc_info.value)
+
+def test_malformed_config_raises_value_error(tmp_path):
+    config_file = tmp_path / "qa-engine.yaml"
+    config_file.write_text(
+        "environments:\n  staging:\n    timeout: [10000\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Error parsing YAML file"):
+        load_config(str(config_file))
