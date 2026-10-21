@@ -1,3 +1,4 @@
+
 import sys
 import os
 
@@ -158,6 +159,7 @@ def test_invalid_timeout_raises_error(monkeypatch, timeout_value):
     ):
         parse_environment_variables()
 
+
 @pytest.mark.parametrize(
     "timeout_value",
     [
@@ -176,6 +178,28 @@ def test_whitespace_only_timeout_raises_error(
         match="Invalid value for PRAMAN_TIMEOUT",
     ):
         parse_environment_variables()
+
+
+@pytest.mark.parametrize(
+    "timeout_value",
+    [
+        "0",
+        "-1",
+        "-100",
+    ],
+)
+def test_non_positive_timeout_raises_error(
+    monkeypatch,
+    timeout_value,
+):
+    monkeypatch.setenv("PRAMAN_TIMEOUT", timeout_value)
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid value for PRAMAN_TIMEOUT",
+    ):
+        parse_environment_variables()
+
 
 
 def test_unsupported_browser_not_rejected_here(monkeypatch):
