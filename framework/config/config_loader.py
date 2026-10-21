@@ -22,8 +22,15 @@ def load_config(file_path: str = "qa-engine.yaml") -> dict:
         except yaml.YAMLError as e:
             raise ValueError(f"Error parsing YAML file '{file_path}': {e}")
             
-    # 3. Fail fast if the file exists but is empty
+        # 3. Fail fast if the file exists but is empty
     if data is None:
         raise ValueError(f"Configuration file '{file_path}' is empty.")
-        
+
+    # 4. Ensure the YAML root is a dictionary
+    if not isinstance(data, dict):
+        raise ValueError(
+            f"Configuration file '{file_path}' must contain a dictionary "
+            f"at the YAML root, but got {type(data).__name__}."
+        )
+
     return data
