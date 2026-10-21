@@ -562,3 +562,24 @@ def test_yaml_source_recovers_after_missing_file_is_restored(tmp_path):
     config = source.get_config()
 
     assert config["timeout"] == 20000
+
+def test_yaml_source_recovers_after_malformed_yaml_is_corrected(tmp_path):
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(
+        "environments:\n  staging:\n    timeout: [10000\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    with pytest.raises(ValueError, match="Error parsing YAML file"):
+        source.get_config()
+
+    temp_file.write_text(
+        "environments:\n  staging:\n    timeout: 25000\n",
+        encoding="utf-8",
+    )
+
+    config = source.get_config()
+
+    assert config["timeout"] == 25000
