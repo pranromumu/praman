@@ -715,9 +715,18 @@ def test_non_boolean_headless_is_rejected():
     ):
         settings.validate()
 
-def test_from_config_none_is_rejected():
+@pytest.mark.parametrize(
+    "invalid_config",
+    [
+        None,
+        [],
+        "invalid",
+        123,
+    ],
+)
+def test_from_config_rejects_non_dictionary_input(invalid_config):
     with pytest.raises(
         ValueError,
         match="Configuration must be a dictionary",
     ):
-        Settings.from_config(None)
+        Settings.from_config(invalid_config)
