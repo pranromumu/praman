@@ -86,6 +86,25 @@ def test_invalid_headless_raises_error(monkeypatch):
     with pytest.raises(ValueError, match="Invalid value for PRAMAN_HEADLESS"):
         parse_environment_variables()
 
+@pytest.mark.parametrize(
+    "headless_value",
+    [
+        "   ",
+        "\t\n",
+    ],
+)
+def test_whitespace_only_headless_raises_error(
+    monkeypatch,
+    headless_value,
+):
+    monkeypatch.setenv("PRAMAN_HEADLESS", headless_value)
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid value for PRAMAN_HEADLESS",
+    ):
+        parse_environment_variables()
+
 def test_invalid_timeout_raises_error(monkeypatch):
     monkeypatch.setenv("PRAMAN_TIMEOUT", "abc")
     with pytest.raises(ValueError, match="Invalid value for PRAMAN_TIMEOUT"):
