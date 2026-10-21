@@ -205,6 +205,21 @@ def test_numeric_environment_configuration_raises_error(tmp_path):
     ):
         source.get_config()
 
+def test_boolean_environment_configuration_raises_error(tmp_path):
+    temp_file = tmp_path / "boolean-staging.yaml"
+    temp_file.write_text(
+        "environments:\n  staging: true\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Configuration for environment 'staging' must be a dictionary",
+    ):
+        source.get_config()
+
 
 def test_root_list_raises_clear_error(tmp_path):
     temp_file = tmp_path / "root-list.yaml"
