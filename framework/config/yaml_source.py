@@ -41,7 +41,10 @@ class YAMLSource(ConfigSource):
             raise ValueError(f"Configuration file '{self._file_path}' is empty.")
         
         # 4. Structural validation: 'environments' key must exist
-        if "environments" not in data or not isinstance(data["environments"], dict):
+        if not isinstance(data, dict) or (
+            "environments" not in data
+            or not isinstance(data["environments"], dict)
+        ):
             raise ValueError(
                 f"Missing or invalid 'environments' key in '{self._file_path}'. "
                 f"Expected a dictionary of environments."
