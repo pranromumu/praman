@@ -4,10 +4,18 @@ import pytest
 from framework.config.environment import Environment
 
 
-def test_from_string_returns_staging_environment():
-    result = Environment.from_string("staging")
+@pytest.mark.parametrize(
+    ("env_name", "expected"),
+    [
+        ("development", Environment.DEVELOPMENT),
+        ("staging", Environment.STAGING),
+        ("production", Environment.PRODUCTION),
+    ],
+)
+def test_from_string_returns_correct_environment(env_name, expected):
+    result = Environment.from_string(env_name)
 
-    assert result is Environment.STAGING
+    assert result is expected
 
 
 @pytest.mark.parametrize(
