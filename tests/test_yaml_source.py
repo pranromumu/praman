@@ -498,3 +498,30 @@ def test_yaml_source_instances_select_environments_independently(tmp_path):
 
     # Reading development must not change staging's configuration.
     assert staging_source.get_config()["timeout"] == 10000
+
+def test_yaml_source_nested_mutations_do_not_persist_between_reads(tmp_path):
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(
+        "environments:\n"
+        "  staging:\n"
+        "    browser:\n"
+        "      name: chromium\n"
+        "      options:\n"
+        "        - headless\n"
+        "    retries:\n"
+        "      count: 3\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    first_config = source.get_config()
+    first_config["browser"]["name"] = "firefox"
+    first_config["browser"]["options"].append("debug")
+    first_config["retries"]["count"] = 99
+
+    second_config = source.get_config()
+
+    assert second_config["browser"]["name"] == "chromium"
+    assert second_config["browser"]["options"] == ["headless"]
+    assert second_config["retries"]["count"] == 3
