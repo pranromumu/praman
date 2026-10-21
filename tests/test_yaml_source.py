@@ -83,6 +83,30 @@ environments:
     assert config["timeout"] == 10000
     assert "staging" not in config
 
+def test_unrelated_environment_does_not_affect_staging_configuration(tmp_path):
+    yaml_content = """
+environments:
+  staging:
+    base_url: "https://staging.client.com"
+    timeout: 30000
+  development:
+    base_url: "https://dev.client.com"
+    timeout: 10000
+  production:
+    base_url: "https://production.client.com"
+    timeout: 60000
+"""
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(yaml_content, encoding="utf-8")
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+    config = source.get_config()
+
+    assert config == {
+        "base_url": "https://staging.client.com",
+        "timeout": 30000,
+    }
+
 def test_utf8_bom_configuration_loads_successfully(tmp_path):
     yaml_content = """environments:
   staging:
