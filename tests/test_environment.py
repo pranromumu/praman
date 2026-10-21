@@ -46,3 +46,10 @@ def test_from_string_rejects_non_string_input(invalid_name):
         match="Environment name must be a string",
     ):
         Environment.from_string(invalid_name)
+
+def test_from_string_rejects_empty_environment_name():
+    with pytest.raises(
+        ValueError,
+        match="Environment name must not be empty",
+    ):
+        Environment.from_string("")
