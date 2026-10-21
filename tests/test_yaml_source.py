@@ -525,3 +525,17 @@ def test_yaml_source_nested_mutations_do_not_persist_between_reads(tmp_path):
     assert second_config["browser"]["name"] == "chromium"
     assert second_config["browser"]["options"] == ["headless"]
     assert second_config["retries"]["count"] == 3
+
+def test_yaml_source_raises_if_file_is_deleted_after_initialization(tmp_path):
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(
+        "environments:\n  staging:\n    timeout: 10000\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    temp_file.unlink()
+
+    with pytest.raises(FileNotFoundError, match="configuration file not found"):
+        source.get_config()
