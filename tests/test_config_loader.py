@@ -58,3 +58,12 @@ def test_null_config_raises_value_error(tmp_path):
 
     with pytest.raises(ValueError, match="is empty"):
         load_config(str(config_file))
+
+def test_string_config_returns_string(tmp_path):
+    config_file = tmp_path / "qa-engine.yaml"
+    config_file.write_text("hello\n", encoding="utf-8")
+
+    result = load_config(str(config_file))
+
+    assert result == "hello"
+    assert isinstance(result, str)
