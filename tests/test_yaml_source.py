@@ -583,3 +583,20 @@ def test_yaml_source_recovers_after_malformed_yaml_is_corrected(tmp_path):
     config = source.get_config()
 
     assert config["timeout"] == 25000
+
+def test_yaml_source_propagates_file_open_oserror(tmp_path, monkeypatch):
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(
+        "environments:\n  staging:\n    timeout: 10000\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    def raise_open_error(*args, **kwargs):
+        raise OSError("Simulated file access failure")
+
+    monkeypatch.setattr("pathlib.Path.open", raise_open_error)
+
+    with pytest.raises(OSError, match="Simulated file access failure"):
+        source.get_config()
