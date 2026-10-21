@@ -730,3 +730,94 @@ def test_from_config_rejects_non_dictionary_input(invalid_config):
         match="Configuration must be a dictionary",
     ):
         Settings.from_config(invalid_config)
+
+
+
+def test_project_228_cli_overrides_environment(tmp_path, monkeypatch):
+    yaml_content = """
+environments:
+  staging:
+    base_url: "https://staging.client.com"
+    browser: chromium
+    headless: true
+    timeout: 30000
+"""
+    config_file = tmp_path / "cli-precedence.yaml"
+    config_file.write_text(yaml_content, encoding="utf-8")
+
+    monkeypatch.setenv("PRAMAN_BROWSER", "firefox")
+
+    settings = Settings.from_config_file(
+        str(config_file),
+        Environment.STAGING,
+        cli_args=["--browser", "webkit"],
+    )
+
+    assert settings.BROWSER == "webkit"
+
+
+def test_project_228_environment_overrides_yaml(tmp_path, monkeypatch):
+    yaml_content = """
+environments:
+  staging:
+    base_url: "https://staging.client.com"
+    browser: chromium
+    headless: true
+    timeout: 30000
+"""
+    config_file = tmp_path / "env-precedence.yaml"
+    config_file.write_text(yaml_content, encoding="utf-8")
+
+    monkeypatch.setenv("PRAMAN_BROWSER", "firefox")
+
+    settings = Settings.from_config_file(
+        str(config_file),
+        Environment.STAGING,
+    )
+
+    assert settings.BROWSER == "firefox"
+
+
+def test_project_228_yaml_overrides_defaults(tmp_path, monkeypatch):
+    yaml_content = """
+environments:
+  staging:
+    base_url: "https://staging.client.com"
+    browser: firefox
+    headless: true
+    timeout: 30000
+"""
+    config_file = tmp_path / "yaml-precedence.yaml"
+    config_file.write_text(yaml_content, encoding="utf-8")
+
+    monkeypatch.delenv("PRAMAN_BROWSER", raising=False)
+
+    settings = Settings.from_config_file(
+        str(config_file),
+        Environment.STAGING,
+    )
+
+    assert settings.BROWSER == "firefox"
+
+
+def test_project_228_full_precedence_chain(tmp_path, monkeypatch):
+    yaml_content = """
+environments:
+  staging:
+    base_url: "https://staging.client.com"
+    browser: chromium
+    headless: true
+    timeout: 30000
+"""
+    config_file = tmp_path / "full-precedence.yaml"
+    config_file.write_text(yaml_content, encoding="utf-8")
+
+    monkeypatch.setenv("PRAMAN_BROWSER", "firefox")
+
+    settings = Settings.from_config_file(
+        str(config_file),
+        Environment.STAGING,
+        cli_args=["--browser", "webkit"],
+    )
+
+    assert settings.BROWSER == "webkit"
