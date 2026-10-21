@@ -150,6 +150,25 @@ def test_invalid_timeout_raises_error(monkeypatch):
     ):
         parse_environment_variables()
 
+@pytest.mark.parametrize(
+    "timeout_value",
+    [
+        "   ",
+        "\t\n",
+    ],
+)
+def test_whitespace_only_timeout_raises_error(
+    monkeypatch,
+    timeout_value,
+):
+    monkeypatch.setenv("PRAMAN_TIMEOUT", timeout_value)
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid value for PRAMAN_TIMEOUT",
+    ):
+        parse_environment_variables()
+
 
 def test_unsupported_browser_not_rejected_here(monkeypatch):
     """Parsing environment variables does not validate browser business rules."""
