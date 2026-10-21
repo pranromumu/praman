@@ -49,6 +49,20 @@ def test_missing_file_raises_error(tmp_path):
     with pytest.raises(FileNotFoundError, match="Praman configuration file not found"):
         source.get_config()
 
+
+def test_empty_file_raises_error(tmp_path):
+    temp_file = tmp_path / "empty.yaml"
+    temp_file.write_text("", encoding="utf-8")
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Configuration file .* is empty\.",
+    ):
+        source.get_config()
+
+
 def test_invalid_yaml_raises_error(tmp_path):
     yaml_content = """
 environments:
