@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from xml.parsers.expat import errors
 from framework.config.environment import Environment
 from framework.config.resolver import resolve_config
 from framework.config.pipeline_builder import build_standard_pipeline
@@ -30,8 +31,16 @@ class Settings:
             errors.append("BASE_URL cannot be empty.")
             
         supported_browsers = ["chromium", "firefox", "webkit"]
-        if self.BROWSER not in supported_browsers:
-            errors.append(f"BROWSER must be one of {supported_browsers}, but got '{self.BROWSER}'.")
+
+        if not isinstance(self.BROWSER, str):
+            errors.append(
+                f"BROWSER must be a string, but got {type(self.BROWSER).__name__}."
+            )
+        elif self.BROWSER not in supported_browsers:
+            errors.append(
+                f"BROWSER must be one of {supported_browsers}, "
+                f"but got '{self.BROWSER}'."
+            )
             
         if not isinstance(self.HEADLESS, bool):
             errors.append(f"HEADLESS must be a boolean (True/False), but got {type(self.HEADLESS).__name__}.")

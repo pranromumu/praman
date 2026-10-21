@@ -686,3 +686,17 @@ def test_from_config_invalid_headless_raises_error():
         match=r"HEADLESS must be a boolean \(True/False\), but got str\.",
     ):
         Settings.from_config(config)
+
+def test_non_string_browser_is_rejected():
+    settings = Settings(
+        BASE_URL="https://example.com",
+        BROWSER=123,
+        HEADLESS=True,
+        TIMEOUT=30000,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BROWSER must be a string",
+    ):
+        settings.validate()
