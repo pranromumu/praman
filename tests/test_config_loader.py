@@ -34,3 +34,10 @@ def test_malformed_config_raises_value_error(tmp_path):
 
     with pytest.raises(ValueError, match="Error parsing YAML file"):
         load_config(str(config_file))
+
+def test_empty_config_raises_value_error(tmp_path):
+    config_file = tmp_path / "qa-engine.yaml"
+    config_file.write_text("", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="is empty"):
+        load_config(str(config_file))
