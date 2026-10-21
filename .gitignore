@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+# Local-only Praman test configuration
+qa-engine.local-test.yaml
