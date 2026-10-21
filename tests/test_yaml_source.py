@@ -172,6 +172,19 @@ def test_numeric_root_raises_clear_error(tmp_path):
         source.get_config()
 
 
+def test_string_root_raises_clear_error(tmp_path):
+    temp_file = tmp_path / "string-root.yaml"
+    temp_file.write_text('"staging configuration"\n', encoding="utf-8")
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    with pytest.raises(
+        ValueError,
+        match=r"Missing or invalid 'environments' key",
+    ):
+        source.get_config()
+
+
 def test_missing_requested_environment_raises_error(tmp_path):
     yaml_content = """
 environments:
