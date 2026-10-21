@@ -539,3 +539,26 @@ def test_yaml_source_raises_if_file_is_deleted_after_initialization(tmp_path):
 
     with pytest.raises(FileNotFoundError, match="configuration file not found"):
         source.get_config()
+
+def test_yaml_source_recovers_after_missing_file_is_restored(tmp_path):
+    temp_file = tmp_path / "qa-engine.yaml"
+    temp_file.write_text(
+        "environments:\n  staging:\n    timeout: 10000\n",
+        encoding="utf-8",
+    )
+
+    source = YAMLSource(str(temp_file), Environment.STAGING)
+
+    temp_file.unlink()
+
+    with pytest.raises(FileNotFoundError):
+        source.get_config()
+
+    temp_file.write_text(
+        "environments:\n  staging:\n    timeout: 20000\n",
+        encoding="utf-8",
+    )
+
+    config = source.get_config()
+
+    assert config["timeout"] == 20000
