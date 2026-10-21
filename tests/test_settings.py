@@ -714,3 +714,10 @@ def test_non_boolean_headless_is_rejected():
         match="HEADLESS must be a boolean",
     ):
         settings.validate()
+
+def test_from_config_none_is_rejected():
+    with pytest.raises(
+        ValueError,
+        match="Configuration must be a dictionary",
+    ):
+        Settings.from_config(None)
