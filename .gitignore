@@ -4,3 +4,19 @@ __pycache__/
 .pytest_cache/
 # Local-only Praman test configuration
 qa-engine.local-test.yaml
+
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+
+# Coverage and test reports
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+pytest.xml
+junit.xml
+
+# Local test evidence; exclude until provenance is verified
+artifacts/
