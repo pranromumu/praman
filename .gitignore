@@ -20,3 +20,15 @@ junit.xml
 
 # Local test evidence; exclude until provenance is verified
 artifacts/
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+wheel-review/
+sdist-review/
+fresh-review/
+
+# Local README drafts and backups
+/README.md.backup
+/README.new.md

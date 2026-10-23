@@ -4,7 +4,7 @@
 
 Praman provides a foundation for managing test configuration and running browser-based tests with Pytest and Playwright.
 
-> **Development status:** Praman is under active development. The local test suite currently passes, but public CI execution, packaging, and release readiness still need to be verified.
+> **Development status:** Praman is under active development. The local test suite, hosted GitHub Actions run, wheel installation, dependency consistency, and packaged source-distribution tests have been verified. Broader compatibility and release readiness have not yet been established.
 
 ## Current capabilities
 
@@ -13,19 +13,26 @@ Praman provides a foundation for managing test configuration and running browser
 - **Environment configuration:** YAML configuration organized by environment.
 - **Configuration overrides:** YAML, environment-variable, and command-line configuration sources.
 - **Validation:** Checks for required configuration fields, supported browser names, positive timeouts, and version-policy values.
-- **Extensible configuration architecture:** Source contracts, dependency injection, version negotiation, normalization, and registry-related components.
+- **Extensible architecture:** Source contracts, dependency injection, version negotiation, normalization, and registry-related components.
 - **Automated tests:** Tests covering browser sessions, configuration, compatibility, contracts, and related framework behavior.
-- **GitHub Actions workflow:** A CI workflow is present in `.github/workflows/ci.yml`; a successful hosted run has not yet been verified.
+- **Continuous integration:** A GitHub Actions workflow at `.github/workflows/ci.yml`; a successful hosted run was recorded for an earlier commit and does not verify the current uncommitted changes.
+
+These capabilities describe the current codebase. AI-driven failure analysis, autonomous code fixes, approval workflows, and external service integrations should be treated as future capabilities unless separately implemented and verified.
 
 ## Requirements
 
-- Python 3.12
-- The dependencies listed in `requirements.txt`
-- A Playwright browser installation for browser-based tests
+- Python 3.12 or newer
+- Dependencies listed in `requirements.txt`
+- Playwright browser binaries for browser-based tests
 
 ## Installation
 
-Clone the repository after its public GitHub URL is available, then enter the project directory.
+Clone the public repository:
+
+```powershell
+git clone https://github.com/pranromumu/praman.git
+cd praman
+```
 
 Create and activate a virtual environment:
 
@@ -48,118 +55,157 @@ python -m playwright install chromium
 
 ## Configuration
 
-Praman reads YAML configuration organized under an `environments` key.
+Praman uses YAML configuration organized by environment. The repository includes `qa-engine.yaml` as an example configuration file.
 
-The repository's `qa-engine.yaml` currently contains example URLs. Replace them with the appropriate URL for your own test environment before running tests against an application.
-
-Example:
+Example structure:
 
 ```yaml
 environments:
   development:
-    base_url: "http://127.0.0.1:8000"
-    browser: "chromium"
+    base_url: "https://dev.client.com"
+    headless: false
+    timeout: 30000
+  staging:
+    base_url: "https://staging.client.com"
+    headless: true
+    timeout: 30000
+  production:
+    base_url: "https://client.com"
     headless: true
     timeout: 30000
 ```
 
-The configuration loader requires an environment mapping and a configuration entry for the selected environment.
+**Important:** The URLs above are examples. Replace them with authorized target environments before running browser tests.
 
-Supported settings include:
+The settings layer supports these configuration values:
 
-| Setting | Description |
+| Setting | Purpose |
 |---|---|
-| `base_url` | Base URL for the test environment |
-| `browser` | Browser name: `chromium`, `firefox`, or `webkit` |
+| `base_url` | Base URL for the target environment |
+| `browser` | Browser selection; Chromium is the default |
 | `headless` | Whether the browser runs without a visible window |
-| `timeout` | Default timeout in milliseconds |
-| `version_policy` | Version-policy selection |
+| `timeout` | Default browser operation timeout in milliseconds |
+| `version_policy` | Policy used by the compatibility/version-selection layer |
 
-`base_url`, `headless`, and `timeout` are required by the current `Settings.from_config()` implementation. The browser defaults to Chromium, and the version policy defaults to `highest`.
+### Configuration validation
 
-## Environment-variable overrides
+Praman loads the selected environment from the `environments` mapping in `qa-engine.yaml`. The YAML source checks that the file exists, can be parsed, and contains a configuration mapping for the requested environment. The settings layer then validates the merged configuration values.
 
-The configuration environment source recognizes:
+After configuration sources are merged, the settings layer validates the resulting configuration:
 
-| Variable | Purpose |
-|---|---|
-| `PRAMAN_BASE_URL` | Override the base URL |
-| `PRAMAN_BROWSER` | Override the browser |
-| `PRAMAN_HEADLESS` | Set headless mode to `true` or `false` |
-| `PRAMAN_TIMEOUT` | Override the timeout in milliseconds |
-| `PRAMAN_VERSION_POLICY` | Override the version policy |
+- **Required:** `base_url`, `headless`, and `timeout`.
+- **Browser:** Defaults to `chromium`; supported values are `chromium`, `firefox`, and `webkit`.
+- **Headless mode:** Must be a Boolean.
+- **Timeout:** Must be a positive integer, in milliseconds.
+- **Version policy:** Defaults to `highest`. When a policy-name provider is used, the configured name must be supported by that provider.
 
-Environment-variable values are validated as part of the configuration pipeline. Invalid values may cause configuration resolution to fail.
+Unknown configuration fields and missing required fields produce validation errors.
 
-## Pytest browser fixture
+### Configuration precedence
 
-The root `conftest.py` defines a `praman_page` fixture.
+The standard configuration pipeline merges sources in this order:
 
-The fixture requires both `PRAMAN_CONFIG_FILE` and `PRAMAN_ENVIRONMENT`. It loads settings for the selected environment and provides a Playwright page inside a managed browser session.
+1. YAML configuration (required).
+2. Environment variables (optional).
+3. Command-line arguments (optional).
 
-For example, in PowerShell:
+When multiple sources define the same setting, the later source overrides the earlier value. Failures from the required YAML source propagate; optional-source failures are logged and skipped.
+
+### Command-line arguments
+
+The CLI source recognizes these arguments:
+
+- `--base-url`
+- `--browser`
+- `--headless`: accepts `true` or `false`, case-insensitively.
+- `--timeout`: expects an integer.
+- `--version-policy`
+
+The CLI source uses `parse_known_args()` so it can coexist with other command-line arguments. Invalid values are rejected by the relevant parsing or configuration-validation logic.
+
+
+### Environment variables
+
+The settings layer recognizes these environment-variable names:
+
+- `PRAMAN_BASE_URL`
+- `PRAMAN_BROWSER`
+- `PRAMAN_HEADLESS`
+- `PRAMAN_TIMEOUT`
+- `PRAMAN_VERSION_POLICY`
+
+### Pytest fixture configuration
+
+The root-level `conftest.py` provides the `praman_page` fixture. It expects:
+
+- `PRAMAN_CONFIG_FILE` - the path to the YAML configuration file.
+- `PRAMAN_ENVIRONMENT` - the environment key to load from that file.
+
+Set these variables before running tests that use the fixture. The fixture is currently defined in the repository's root `conftest.py`; it is not claimed to be an independently installed pytest plugin.
+
+## Running the tests
+
+From the repository root, with the project dependencies installed:
 
 ```powershell
-$env:PRAMAN_CONFIG_FILE = ".\qa-engine.yaml"
-$env:PRAMAN_ENVIRONMENT = "development"
 python -m pytest -q
 ```
 
-The example configuration must be suitable for the tests being run. Browser-based tests require the relevant Playwright browser binaries to be installed.
+**Latest recorded local verification:** 476 tests passed.
 
-## Running tests
+**Hosted CI verification:** A successful GitHub Actions run was recorded for the earlier commit `5dbe6319bb5e2b99979e52f5a8fa5b2f8b35c9c9`. This run predates the current uncommitted changes and does not verify the current working tree.
 
-Run the test suite from the repository root:
+These results document specific runs, not a guarantee that every future environment or run will produce the same result.
 
-```powershell
-python -m pytest -q
-```
+## Continuous integration
 
-A local run during preparation of this README reported:
+The workflow at `.github/workflows/ci.yml` runs on GitHub-hosted Ubuntu runners. It checks out the repository, sets up Python 3.12, installs dependencies, installs Chromium, and runs the Pytest suite.
 
-```text
-476 passed in 10.34s
-```
-
-This result records that specific local run; it is not a guarantee that every environment or future revision will produce the same result.
+The workflow is configured for pushes and pull requests targeting `main`, as well as manual dispatch.
 
 ## Project structure
 
 ```text
 praman/
 |-- .github/
-|   |-- workflows/
-|   |   |-- ci.yml
+|   `-- workflows/
+|       `-- ci.yml
 |-- framework/
 |   |-- browser/
 |   |-- compatibility/
 |   |-- config/
-|   |-- contracts/
+|   `-- contracts/
 |-- tests/
 |-- conftest.py
 |-- qa-engine.yaml
 |-- requirements.txt
 |-- pytest.ini
+|-- pyproject.toml
+|-- MANIFEST.in
 |-- LICENSE
-|-- README.md
-
+`-- README.md
 ```
 
-## Development status and scope
+This is a high-level view of the main tracked project components. Individual files and local development artifacts may vary.
 
-Praman is a developing framework, not a claim of complete enterprise QA automation.
+## Development scope
 
-The repository contains browser-session management, configuration resolution and validation, compatibility-related components, and automated tests. Further work is needed to verify the public CI workflow, define packaging and distribution, and document stable public APIs.
+Praman is an evolving framework, not a claim of a fully autonomous enterprise QA platform. Its current focus is a testable foundation for browser automation, configuration management, and extensible integration contracts.
 
-Features such as AI-driven failure analysis, autonomous code fixes, approval workflows, and external service integrations should be considered future capabilities unless and until their implementations and tests are verified in the repository.
+Potential future development includes:
+
+- Evidence-grounded AI analysis of test failures
+- AI-assisted test creation
+- Suggested code changes with human review
+- Controlled reruns and approval workflows
+- Integrations with source-control, issue-tracking, notification, and artifact-storage systems
+
+These are roadmap items unless their implementation and behavior are independently verified.
 
 ## Contributing
 
-Contributions, bug reports, and suggestions are welcome. Before contributing, run the test suite and describe the behavior your change introduces or fixes.
-
-Contribution guidelines and issue templates may be added as the project matures.
+Contributions, bug reports, and reproducible test cases are welcome. Please describe the environment, steps to reproduce the issue, and relevant error output. Avoid including credentials, access tokens, private client data, or other sensitive information in reports.
 
 ## License
 
-Praman is licensed under the MIT License. See [LICENSE](LICENSE) for the full license text.
-
+Praman is distributed under the MIT License. See [`LICENSE`](LICENSE) for details.

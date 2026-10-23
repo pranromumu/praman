@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "praman"
+version = "0.1.0"
+description = "A modular Python QA automation framework for configuration management and browser automation."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [
+    { name = "Kabir Hossain" }
+]
+dependencies = [
+    "PyYAML>=6.0.3",
+    "playwright>=1.62.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["framework*"]
+namespaces = true
