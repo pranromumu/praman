@@ -26,3 +26,6 @@ dev = [
 where = ["."]
 include = ["framework*"]
 namespaces = true
+
+[project.entry-points.pytest11]
+praman = "framework.pytest_plugin"
