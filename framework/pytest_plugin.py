@@ -20,10 +20,16 @@ def praman_page():
             "to use the praman_page fixture."
         )
 
-    settings = Settings.from_config_file(
-        file_path=config_file,
-        env=Environment.from_string(environment_name),
-    )
+    try:
+        environment = Environment.from_string(environment_name)
+        settings = Settings.from_config_file(
+            file_path=config_file,
+            env=environment,
+        )
+    except (OSError, ValueError) as exc:
+        raise pytest.UsageError(
+            f"PRAMAN configuration error: {exc}"
+        ) from exc
 
     with open_browser_page(settings) as page:
         yield page
