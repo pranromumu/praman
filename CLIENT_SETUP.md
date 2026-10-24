@@ -9,7 +9,7 @@ PRAMAN is designed to be integrated into an existing client project. Your applic
 Before starting, make sure you have:
 
 - Windows, macOS, or Linux.
-- A supported Python version.
+- Python 3.12 or newer (required by the current PRAMAN package).
 - A client project where you can run Python tests.
 - The PRAMAN wheel package provided by the PRAMAN maintainer.
 - Access to the application you are authorized to test.
@@ -38,7 +38,7 @@ Activate it:
 .\.venv\Scripts\Activate.ps1
 ```
 
-If PowerShell blocks activation, you can use the environment's Python executable directly instead.
+If PowerShell blocks activation, you can use the environment's Python executable directly instead. For example, replace `python` in the commands below with `.\.venv\Scripts\python.exe`.
 
 Upgrade pip:
 
@@ -60,22 +60,24 @@ Install it:
 python -m pip install "D:\Packages\praman-0.1.0-py3-none-any.whl"
 ```
 
-Install Pytest:
+The PRAMAN wheel declares Playwright and PyYAML as dependencies, so pip should install them automatically when it installs the wheel. Pytest is a separate development/test dependency, so install it in the same virtual environment:
 
 ```powershell
 python -m pip install pytest
 ```
 
-Install the Chromium browser required by the example configuration:
+Install the Chromium browser binary used by the example configuration. This is a separate step from installing the Playwright Python package:
 
 ```powershell
 python -m playwright install chromium
 ```
 
-Check that the packages are available:
+Check the Python version and confirm that the packages are available in the same environment you will use to run tests:
 
 ```powershell
-python -m pip show praman pytest playwright
+python --version
+python -m pip --version
+python -m pip show praman pytest playwright PyYAML
 ```
 
 The installed PRAMAN distribution includes a Pytest plugin that provides the `praman_page` fixture. You do not need to copy PRAMAN's internal source files into your project or add the fixture to your own `conftest.py`.
@@ -124,33 +126,41 @@ These environment variables apply to the current PowerShell session. Set them ag
 
 Both variables are required by the `praman_page` fixture.
 
-## 6. Create your first browser test
+## 6. Create your first browser smoke test
 
-Create the following file:
+Create a file named `test_praman_smoke.py` in your project directory:
 
-`tests/test_homepage.py`
+```python
+def test_praman_smoke(praman_page):
+    praman_page.set_content(
+        "<title>PRAMAN Smoke Test</title><h1>PRAMAN Ready</h1>"
+    )
+
+    assert praman_page.title() == "PRAMAN Smoke Test"
+    assert praman_page.locator("h1").inner_text() == "PRAMAN Ready"
+```
+
+This smoke test checks that the installed pytest plugin provides the fixture and that the browser can start and interact with a page. It does not require access to a public website or your application's server.
+
+After the smoke test passes, create tests for your application. For example:
 
 ```python
 def test_homepage(praman_page):
-    praman_page.goto("https://example.com")
-
-    assert praman_page.title() == "Example Domain"
-    assert praman_page.locator("h1").inner_text() == "Example Domain"
+    praman_page.goto("https://your-authorized-test-application.example")
+    assert praman_page.locator("h1").is_visible()
 ```
 
-This test uses the automatically loaded PRAMAN fixture to open a browser page, navigate to the example website, and verify the page title and heading.
-
-For your own application, replace the example URL and expected content with values appropriate for your application.
+Replace the example URL with your application's test URL and adjust the assertions to match its expected behavior. The fixture does not automatically navigate to the configured `base_url`; tests must navigate explicitly.
 
 ## 7. Run the test
 
 From your client project directory, run:
 
 ```powershell
-python -m pytest -v
+python -m pytest -v --tb=short
 ```
 
-A successful run should report one passing test.
+A successful run should report one passing test. The `--tb=short` option keeps failure tracebacks more concise while retaining useful diagnostic information.
 
 Pytest automatically discovers the installed PRAMAN plugin through its package entry point. You should not need to import `praman_page` into your test file.
 
