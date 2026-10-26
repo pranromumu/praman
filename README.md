@@ -238,6 +238,12 @@ If the required environment variables are missing, the fixture raises a Pytest u
 
 > **Important:** The root-level `conftest.py` in the PRAMAN development repository also provides a fixture for repository tests. The installed plugin is the integration mechanism intended for external client projects.
 
+### API testing
+
+The installed PRAMAN Pytest plugin also provides the `praman_api` fixture for API requests through Playwright. Configure `PRAMAN_CONFIG_FILE` and `PRAMAN_ENVIRONMENT` as described above, then use `praman_api.get()`, `praman_api.post()`, or other supported request methods in your tests.
+
+See [API_TESTING.md](API_TESTING.md) for a complete example and instructions.
+
 ## Running the PRAMAN test suite
 
 From the PRAMAN development repository, with the development dependencies installed:
@@ -250,8 +256,8 @@ python -m pytest -q
 
 The following results have been observed during development:
 
-- **Local test suite:** 476 tests passed.
-- **External client test:** 1 test passed using the installed wheel in an isolated Python environment.
+- **Local test suite:** 499 tests passed.
+- **External client tests:** 2 tests passed using the installed wheel in an isolated Python environment.
 - **Plugin discovery:** Pytest reported `praman-0.1.0` when running the external client test.
 - **Hosted CI:** A successful GitHub Actions run was recorded for the earlier commit `5dbe6319bb5e2b99979e52f5a8fa5b2f8b35c9c9`.
 

@@ -32,3 +32,9 @@ fresh-review/
 # Local README drafts and backups
 /README.md.backup
 /README.new.md
+
+# Temporary backup files
+*.bak
+
+# Phase 2 distribution artifacts
+/dist-phase2/
