@@ -37,3 +37,14 @@ jobs:
 
       - name: Run test suite
         run: python -m pytest -q
+
+      - name: Upload PRAMAN test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: praman-test-evidence
+          path: |
+            artifacts/praman-report.json
+            artifacts/failures/
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,4 +1,4 @@
-# PRAMAN
+﻿# PRAMAN
 
 **A modular Python QA automation framework for browser testing, configuration management, and extensible test integrations.**
 
@@ -244,6 +244,49 @@ The installed PRAMAN Pytest plugin also provides the `praman_api` fixture for AP
 
 See [API_TESTING.md](API_TESTING.md) for a complete example and instructions.
 
+### Failure screenshots
+
+PRAMAN automatically attempts to capture a full-page screenshot when a test using the `praman_page` fixture fails during execution.
+
+By default, screenshots are saved to:
+
+```text
+artifacts/failures/
+```
+
+To use a custom output directory, set the `PRAMAN_ARTIFACTS_DIR` environment variable. For example, in PowerShell:
+
+```powershell
+$env:PRAMAN_ARTIFACTS_DIR = "D:\client-project\test-artifacts"
+```
+
+PRAMAN creates the output directory if it does not exist. If screenshot capture fails, PRAMAN reports the error without masking the original test failure. API-only tests that do not use `praman_page` do not trigger screenshot capture.
+
+
+## JSON test evidence report
+
+PRAMAN generates a JSON report at the end of each pytest session. The report includes:
+
+- Summary counts for total, passed, failed, and skipped tests.
+- Test IDs and individual outcomes.
+- Test durations in seconds.
+- Failure details when available.
+- Failure screenshot paths when captured.
+- Pytest exit status.
+- Report generation timestamp in UTC.
+
+By default, the report is written to `artifacts/praman-report.json`.
+
+To use a custom report path in PowerShell:
+
+```powershell
+$env:PRAMAN_REPORT_PATH = "artifacts/reports/test-report.json"
+python -m pytest -q
+```
+
+PRAMAN creates the report directory if it does not exist. If report generation fails, PRAMAN prints an error message without replacing the original pytest exit status.
+
+
 ## Running the PRAMAN test suite
 
 From the PRAMAN development repository, with the development dependencies installed:
@@ -256,7 +299,7 @@ python -m pytest -q
 
 The following results have been observed during development:
 
-- **Local test suite:** 499 tests passed.
+- **Local test suite:** 508 tests passed in the latest verified run.
 - **External client tests:** 2 tests passed using the installed wheel in an isolated Python environment.
 - **Plugin discovery:** Pytest reported `praman-0.1.0` when running the external client test.
 - **Hosted CI:** A successful GitHub Actions run was recorded for the earlier commit `5dbe6319bb5e2b99979e52f5a8fa5b2f8b35c9c9`.
