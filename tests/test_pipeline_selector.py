@@ -80,3 +80,14 @@ def test_8_selector_does_not_modify_resolver():
     params = list(sig.parameters.values())
     assert len(params) == 1
     assert params[0].name == "sources"
+
+def test_unknown_pipeline_error_lists_supported_pipelines():
+    with pytest.raises(ValueError) as exc_info:
+        select_pipeline("unknown", cli_args=[])
+
+    message = str(exc_info.value)
+
+    assert "Unknown pipeline name: 'unknown'." in message
+    assert "standard" in message
+    assert "test" in message
+    assert "ci" in message
