@@ -317,3 +317,30 @@ def test_resolved_config_does_not_share_nested_mutable_values():
             "options": ["one", "two"]
         }
     }
+
+def test_optional_source_copy_failure_does_not_stop_resolution(caplog):
+    class Uncopyable:
+        def __deepcopy__(self, memo):
+            raise RuntimeError("copy failed")
+
+    class BadSource:
+        def get_config(self):
+            return {"bad": Uncopyable()}
+
+    with caplog.at_level("WARNING"):
+        result = resolve_config([
+            SourceSpec(
+                source=BadSource(),
+                failure_policy=FailurePolicy.OPTIONAL,
+            ),
+            SourceSpec(
+                source=LowPrioritySource(),
+                failure_policy=FailurePolicy.REQUIRED,
+            ),
+        ])
+
+    assert result == {
+        "browser": "chromium",
+        "timeout": 30000,
+    }
+    assert "copy failed" in caplog.text
