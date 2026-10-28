@@ -147,3 +147,26 @@ def test_env_source_implements_config_source():
     source = EnvSource(environ={})
 
     assert isinstance(source, ConfigSource)
+
+def test_env_source_headless_ignores_surrounding_whitespace():
+    source = EnvSource(
+        environ={
+            "PRAMAN_HEADLESS": " true "
+        }
+    )
+
+    result = source.get_config()
+
+    assert result["headless"] is True
+
+
+def test_env_source_timeout_ignores_surrounding_whitespace():
+    source = EnvSource(
+        environ={
+            "PRAMAN_TIMEOUT": " 5000 "
+        }
+    )
+
+    result = source.get_config()
+
+    assert result["timeout"] == 5000

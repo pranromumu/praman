@@ -33,7 +33,7 @@ class EnvSource(ConfigSource):
 
         headless = self.environ.get("PRAMAN_HEADLESS")
         if headless is not None:
-            value = headless.lower()
+            value = headless.strip().lower()
 
             if value == "true":
                 overrides["headless"] = True
