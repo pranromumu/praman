@@ -120,7 +120,7 @@ class Settings:
 
         unknown_fields = provided_fields - allowed_fields
 
-        for field in sorted(unknown_fields):
+        for field in sorted(unknown_fields, key=str):
             message = f"Unexpected configuration field: '{field}'"
             if field == "baseurl":
                 message += " Did you mean 'base_url'?"

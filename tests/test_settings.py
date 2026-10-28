@@ -582,6 +582,25 @@ def test_from_config_unknown_field_raises_error():
         Settings.from_config(config)
 
 
+def test_from_config_mixed_type_unknown_keys_raise_validation_error():
+    config = {
+        "base_url": "https://example.com",
+        "browser": "chromium",
+        "headless": True,
+        "timeout": 30000,
+        7: "unexpected",
+        None: "also unexpected",
+    }
+
+    with pytest.raises(ValueError) as exc_info:
+        Settings.from_config(config)
+
+    error_message = str(exc_info.value)
+
+    assert "Unexpected configuration field: '7'" in error_message
+    assert "Unexpected configuration field: 'None'" in error_message
+
+
 def test_from_config_baseurl_typo_suggests_base_url():
     config = {
         "baseurl": "https://example.com",
