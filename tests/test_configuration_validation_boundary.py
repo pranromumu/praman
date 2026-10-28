@@ -105,3 +105,23 @@ def test_11_default_provider_still_rejects_middle():
     # Should fail because the default production factory only supports "highest" and "lowest"
     with pytest.raises(ValueError, match="VERSION_POLICY must be one of"):
         Settings.from_config(config)
+
+def test_from_config_reports_unknown_fields_and_invalid_values_together():
+    config = {
+        "base_url": "",
+        "headless": "yes",
+        "timeout": 0,
+        "browser": "opera",
+        "unexpected_field": "value",
+    }
+
+    with pytest.raises(ValueError) as exc_info:
+        Settings.from_config(config)
+
+    error_message = str(exc_info.value)
+
+    assert "Unexpected configuration field: 'unexpected_field'" in error_message
+    assert "BASE_URL cannot be empty." in error_message
+    assert "HEADLESS must be a boolean" in error_message
+    assert "TIMEOUT must be an integer greater than 0" in error_message
+    assert "BROWSER must be one of" in error_message
