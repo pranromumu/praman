@@ -344,3 +344,17 @@ def test_optional_source_copy_failure_does_not_stop_resolution(caplog):
         "timeout": 30000,
     }
     assert "copy failed" in caplog.text
+
+def test_required_source_returning_none_propagates_type_error():
+    invalid_source = FakeConfigSource(None)
+
+    with pytest.raises(
+        TypeError,
+        match=r"Configuration source FakeConfigSource must return a dict, got NoneType",
+    ):
+        resolve_config([
+            SourceSpec(
+                source=invalid_source,
+                failure_policy=FailurePolicy.REQUIRED,
+            )
+        ])
