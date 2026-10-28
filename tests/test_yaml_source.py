@@ -601,3 +601,16 @@ def test_yaml_source_propagates_file_open_oserror(tmp_path, monkeypatch):
     with pytest.raises(OSError, match="Simulated file access failure"):
         source.get_config()
 
+
+def test_invalid_utf8_encoding_raises_unicode_decode_error(tmp_path):
+    config_file = tmp_path / "invalid-utf8.yaml"
+    config_file.write_bytes(
+        b"environments:\n"
+        b"  staging:\n"
+        b"    timeout: \xff\n"
+    )
+
+    source = YAMLSource(str(config_file), Environment.STAGING)
+
+    with pytest.raises(UnicodeDecodeError):
+        source.get_config()
