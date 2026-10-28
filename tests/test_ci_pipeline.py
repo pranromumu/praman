@@ -102,3 +102,19 @@ def test_9_registry_points_to_ci_builder():
     )
     assert len(specs) == 4
     assert specs[3].source is cli
+
+def test_ci_pipeline_without_cli_source():
+    yaml = FakeConfigSource({"base_url": "https://yaml.com"})
+    env = FakeConfigSource({"browser": "firefox"})
+    github = FakeConfigSource({"api_key": "test-key"})
+
+    specs = build_ci_pipeline(yaml, env, github)
+
+    assert len(specs) == 3
+    assert specs[0].source is yaml
+    assert specs[1].source is env
+    assert specs[2].source is github
+
+    assert specs[0].failure_policy == FailurePolicy.REQUIRED
+    assert specs[1].failure_policy == FailurePolicy.OPTIONAL
+    assert specs[2].failure_policy == FailurePolicy.REQUIRED
