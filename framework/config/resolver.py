@@ -1,5 +1,7 @@
+import copy
 import logging
 from collections.abc import Iterable
+
 from framework.contracts.config_source import ConfigSource
 from framework.config.config_validation import validate_config
 from framework.config.failure_policy import FailurePolicy
@@ -25,6 +27,7 @@ def resolve_config(sources: Iterable[SourceSpec]) -> dict:
                 config,
                 spec.source.__class__.__name__,
             )
+            config = copy.deepcopy(config)
             merged_config = {**merged_config, **config}
 
         except Exception as error:

@@ -293,3 +293,27 @@ def test_optional_source_returning_none_does_not_stop_resolution():
         "browser": "chromium",
         "timeout": 30000,
     }
+
+
+def test_resolved_config_does_not_share_nested_mutable_values():
+    original_config = {
+        "custom": {
+            "options": ["one", "two"]
+        }
+    }
+    source = FakeConfigSource(original_config)
+
+    result = resolve_config([
+        SourceSpec(
+            source=source,
+            failure_policy=FailurePolicy.REQUIRED,
+        )
+    ])
+
+    result["custom"]["options"].append("three")
+
+    assert original_config == {
+        "custom": {
+            "options": ["one", "two"]
+        }
+    }
