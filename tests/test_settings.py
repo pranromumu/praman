@@ -840,3 +840,19 @@ environments:
     )
 
     assert settings.BROWSER == "webkit"
+
+def test_get_validation_errors_returns_multiple_errors_without_raising():
+    settings = Settings(
+        BASE_URL="",
+        BROWSER="safari",
+        HEADLESS="yes",
+        TIMEOUT=0,
+    )
+
+    errors = settings.get_validation_errors()
+
+    assert isinstance(errors, list)
+    assert any("BASE_URL cannot be empty" in error for error in errors)
+    assert any("BROWSER must be one of" in error for error in errors)
+    assert any("HEADLESS must be a boolean" in error for error in errors)
+    assert any("TIMEOUT must be an integer greater than 0" in error for error in errors)
