@@ -1,6 +1,7 @@
-import os
 import json
+import os
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -10,10 +11,36 @@ from framework.browser.session import open_browser_page
 from framework.config.environment import Environment
 from framework.config.settings import Settings
 
-def _build_json_report(results, exit_status):
+
+_REPORT_METADATA = None
+
+
+def _extract_failure_message(failure_details):
+    """Extract a concise failure message from structured failure details."""
+    if not failure_details:
+        return None
+
+    lines = [
+        line.strip()
+        for line in failure_details.splitlines()
+        if line.strip()
+    ]
+
+    if not lines:
+        return None
+
+    for line in reversed(lines):
+        if line.startswith("E "):
+            return line[2:].strip()
+
+    return lines[-1]
+
+
+def _build_json_report(results, exit_status, metadata=None):
     """Build a structured JSON-compatible test report."""
     outcomes = [result["outcome"] for result in results]
-    return {
+
+    report = {
         "summary": {
             "total": len(results),
             "passed": outcomes.count("passed"),
@@ -23,6 +50,12 @@ def _build_json_report(results, exit_status):
         "exit_status": exit_status,
         "tests": results,
     }
+
+    if metadata is not None:
+        report["metadata"] = metadata
+
+    return report
+
 
 def _load_settings() -> Settings:
     """Load validated settings from the configured environment."""
@@ -36,17 +69,26 @@ def _load_settings() -> Settings:
             "to use Praman fixtures."
         )
 
+    global _REPORT_METADATA
+
     try:
         environment = Environment.from_string(environment_name)
-        return Settings.from_config_file(
+        settings = Settings.from_config_file(
             file_path=config_file,
             env=environment,
         )
+
+        _REPORT_METADATA = {
+            "browser": settings.BROWSER,
+            "environment": environment.value,
+        }
+
+        return settings
+
     except (OSError, ValueError) as exc:
         raise pytest.UsageError(
             f"PRAMAN configuration error: {exc}"
         ) from exc
-
 
 
 def _capture_failure_screenshot(page, node_id: str) -> Path:
@@ -76,6 +118,7 @@ def _capture_failure_screenshot(page, node_id: str) -> Path:
         artifacts_dir / f"{safe_node_id}_{node_id_hash}.png"
     )
     page.screenshot(path=str(screenshot_path), full_page=True)
+
     return screenshot_path
 
 
@@ -115,6 +158,7 @@ def pytest_runtest_makereport(item, call):
 
     if report.when == "call" and report.failed:
         page = item.funcargs.get("praman_page")
+
         if page is not None:
             try:
                 screenshot_path = _capture_failure_screenshot(
@@ -123,6 +167,7 @@ def pytest_runtest_makereport(item, call):
                 )
                 item._praman_screenshot_path = str(screenshot_path)
                 print(f"\nPRAMAN failure screenshot: {screenshot_path}")
+
             except Exception as exc:
                 print(
                     f"\nPRAMAN could not capture failure screenshot: {exc}"
@@ -136,11 +181,15 @@ def pytest_runtest_makereport(item, call):
     teardown_report = phase_reports.get("teardown")
 
     reports = [
-        phase for phase in (setup_report, call_report, teardown_report)
+        phase
+        for phase in (setup_report, call_report, teardown_report)
         if phase is not None
     ]
 
-    failed_reports = [phase for phase in reports if phase.failed]
+    failed_reports = [
+        phase for phase in reports if phase.failed
+    ]
+
     if failed_reports:
         final_outcome = "failed"
     elif any(phase.skipped for phase in reports):
@@ -153,7 +202,9 @@ def pytest_runtest_makereport(item, call):
         for phase in failed_reports
     ) or None
 
+    failure_message = _extract_failure_message(failure_details)
     results = item.config._praman_test_results
+
     results.append(
         {
             "test_id": item.nodeid,
@@ -163,6 +214,7 @@ def pytest_runtest_makereport(item, call):
                 3,
             ),
             "failure_details": failure_details,
+            "failure_message": failure_message,
             "screenshot_path": getattr(
                 item,
                 "_praman_screenshot_path",
@@ -174,6 +226,9 @@ def pytest_runtest_makereport(item, call):
 
 def pytest_sessionstart(session):
     """Initialize report collection for this test session."""
+
+    global _REPORT_METADATA
+    _REPORT_METADATA = None
 
     session.config._praman_test_results = []
 
@@ -190,17 +245,21 @@ def pytest_sessionfinish(session, exitstatus):
 
     try:
         report_path.parent.mkdir(parents=True, exist_ok=True)
+
         report = _build_json_report(
             session.config._praman_test_results,
             exitstatus,
+            metadata=_REPORT_METADATA,
         )
-        from datetime import datetime, timezone
 
         report["generated_at"] = datetime.now(timezone.utc).isoformat()
+
         report_path.write_text(
             json.dumps(report, indent=2),
             encoding="utf-8",
         )
+
         print(f"\nPRAMAN JSON report: {report_path}")
+
     except Exception as exc:
         print(f"\nPRAMAN could not write JSON report: {exc}")

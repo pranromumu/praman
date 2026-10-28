@@ -113,6 +113,29 @@ def test_build_json_report_handles_empty_results():
     assert report["exit_status"] == 0
     assert report["tests"] == []
 
+def test_build_json_report_includes_metadata_when_provided():
+    metadata = {
+        "browser": "chromium",
+        "environment": "development",
+    }
+
+    report = pytest_plugin._build_json_report(
+        [],
+        exit_status=0,
+        metadata=metadata,
+    )
+
+    assert report["metadata"] == metadata
+
+
+def test_build_json_report_omits_metadata_when_not_provided():
+    report = pytest_plugin._build_json_report(
+        [],
+        exit_status=0,
+    )
+
+    assert "metadata" not in report
+
 def test_write_json_report_creates_report_file(
     monkeypatch, tmp_path
 ):
@@ -262,6 +285,9 @@ def test_setup_failure_is_recorded_in_json_results():
     assert "Browser fixture failed to initialize" in (
         results[0]["failure_details"]
     )
+    assert results[0]["failure_message"] == (
+        "Browser fixture failed to initialize"
+    )
 
 
 def test_capture_failure_screenshot_avoids_filename_collisions(
@@ -326,3 +352,28 @@ def test_teardown_failure_is_recorded_in_json_results():
     assert results[0]["outcome"] == "failed"
     assert "TEARDOWN FAILURE" in results[0]["failure_details"]
     assert "Browser cleanup failed" in results[0]["failure_details"]
+
+def test_extract_failure_message_returns_assertion_error():
+    details = (
+        "CALL FAILURE:\n"
+        "AssertionError: Total was incorrect\n"
+        "E assert 100 == 120"
+    )
+
+    message = pytest_plugin._extract_failure_message(details)
+
+    assert message == "assert 100 == 120"
+
+
+def test_extract_failure_message_returns_last_line_when_no_error_marker():
+    details = "CALL FAILURE:\nRuntimeError: Browser closed"
+
+    message = pytest_plugin._extract_failure_message(details)
+
+    assert message == "RuntimeError: Browser closed"
+
+
+def test_extract_failure_message_returns_none_for_empty_details():
+    assert pytest_plugin._extract_failure_message(None) is None
+    assert pytest_plugin._extract_failure_message("") is None
+    assert pytest_plugin._extract_failure_message(" \n ") is None
