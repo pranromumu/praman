@@ -101,3 +101,23 @@ def test_missing_required_field_stops_before_value_validation():
     assert "headless" in error_message
     assert "timeout" in error_message
     assert "BROWSER must be one of" not in error_message
+
+def test_settings_are_independent_of_input_config_mutations():
+    config = {
+        "base_url": "https://test.example.com",
+        "browser": "firefox",
+        "headless": True,
+        "timeout": 10000,
+    }
+
+    settings = Settings.from_config(config)
+
+    config["base_url"] = "https://changed.example.com"
+    config["browser"] = "webkit"
+    config["headless"] = False
+    config["timeout"] = 5000
+
+    assert settings.BASE_URL == "https://test.example.com"
+    assert settings.BROWSER == "firefox"
+    assert settings.HEADLESS is True
+    assert settings.TIMEOUT == 10000
