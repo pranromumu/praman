@@ -84,3 +84,10 @@ def test_default_args_reads_sys_argv(monkeypatch):
     result = source.get_config()
 
     assert result == {"browser": "firefox"}
+
+def test_negative_timeout_passes_through_for_business_validation():
+    source = CLISource(args=["--timeout", "-5"])
+
+    result = source.get_config()
+
+    assert result == {"timeout": -5}
