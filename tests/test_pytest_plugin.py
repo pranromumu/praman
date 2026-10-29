@@ -226,6 +226,75 @@ def test_write_json_report_handles_write_error(
     assert "PRAMAN could not write JSON report" in captured.out
     assert "Permission denied" in captured.out
 
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+
+def test_successful_failure_screenshot_path_is_recorded_in_json_results(
+    monkeypatch, tmp_path
+):
+    screenshot_path = tmp_path / "checkout-failure.png"
+    page = Mock()
+
+    item = SimpleNamespace(
+        funcargs={"praman_page": page},
+        nodeid="tests/test_checkout.py::test_checkout",
+        _praman_phase_reports={},
+        config=SimpleNamespace(_praman_test_results=[]),
+    )
+
+    monkeypatch.setattr(
+        pytest_plugin,
+        "_capture_failure_screenshot",
+        Mock(return_value=screenshot_path),
+    )
+
+    call_report = SimpleNamespace(
+        when="call",
+        failed=True,
+        longrepr="Checkout total was incorrect",
+        duration=0.1,
+        skipped=False,
+    )
+
+    call_hook = pytest_plugin.pytest_runtest_makereport(
+        item, SimpleNamespace()
+    )
+    next(call_hook)
+
+    with pytest.raises(StopIteration):
+        call_hook.send(
+            SimpleNamespace(get_result=lambda: call_report)
+        )
+
+    assert item._praman_screenshot_path == str(screenshot_path)
+
+    teardown_report = SimpleNamespace(
+        when="teardown",
+        failed=False,
+        longrepr=None,
+        duration=0.02,
+        skipped=False,
+    )
+
+    teardown_hook = pytest_plugin.pytest_runtest_makereport(
+        item, SimpleNamespace()
+    )
+    next(teardown_hook)
+
+    with pytest.raises(StopIteration):
+        teardown_hook.send(
+            SimpleNamespace(get_result=lambda: teardown_report)
+        )
+
+    results = item.config._praman_test_results
+
+    assert len(results) == 1
+    assert results[0]["outcome"] == "failed"
+    assert results[0]["screenshot_path"] == str(screenshot_path)
+    assert results[0]["failure_message"] is not None
+
+
 def test_screenshot_error_does_not_hide_original_test_failure(
     monkeypatch, capsys
 ):
