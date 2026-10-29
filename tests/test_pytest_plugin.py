@@ -1,6 +1,31 @@
+from types import SimpleNamespace
+
 import pytest
 
 from framework import pytest_plugin
+
+
+def test_sessionstart_resets_metadata_and_previous_results(monkeypatch):
+    previous_results = [
+        {"test_id": "previous_test", "outcome": "failed"}
+    ]
+    session = SimpleNamespace(
+        config=SimpleNamespace(
+            _praman_test_results=previous_results
+        )
+    )
+
+    monkeypatch.setattr(
+        pytest_plugin,
+        "_REPORT_METADATA",
+        {"browser": "chromium", "environment": "development"},
+    )
+
+    pytest_plugin.pytest_sessionstart(session)
+
+    assert pytest_plugin._REPORT_METADATA is None
+    assert session.config._praman_test_results == []
+    assert session.config._praman_test_results is not previous_results
 
 
 def test_praman_page_requires_both_environment_variables(monkeypatch):
