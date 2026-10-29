@@ -429,6 +429,60 @@ def test_teardown_failure_is_recorded_in_json_results():
     assert "TEARDOWN FAILURE" in results[0]["failure_details"]
     assert "Browser cleanup failed" in results[0]["failure_details"]
 
+
+def test_call_and_teardown_failures_are_both_recorded():
+    from types import SimpleNamespace
+
+    item = SimpleNamespace(
+        nodeid="tests/test_checkout.py::test_checkout",
+        _praman_phase_reports={},
+        config=SimpleNamespace(_praman_test_results=[]),
+        funcargs={},
+    )
+
+    call_report = SimpleNamespace(
+        when="call",
+        failed=True,
+        skipped=False,
+        longrepr="AssertionError: Checkout total was incorrect",
+        duration=0.1,
+    )
+
+    teardown_report = SimpleNamespace(
+        when="teardown",
+        failed=True,
+        skipped=False,
+        longrepr="RuntimeError: Browser cleanup failed",
+        duration=0.02,
+    )
+
+    item._praman_phase_reports["call"] = call_report
+
+    hook = pytest_plugin.pytest_runtest_makereport(
+        item, SimpleNamespace()
+    )
+    next(hook)
+
+    with pytest.raises(StopIteration):
+        hook.send(
+            SimpleNamespace(get_result=lambda: teardown_report)
+        )
+
+    results = item.config._praman_test_results
+
+    assert len(results) == 1
+    assert results[0]["test_id"] == item.nodeid
+    assert results[0]["outcome"] == "failed"
+
+    details = results[0]["failure_details"]
+    assert "CALL FAILURE" in details
+    assert "Checkout total was incorrect" in details
+    assert "TEARDOWN FAILURE" in details
+    assert "Browser cleanup failed" in details
+
+    assert results[0]["failure_message"] is not None
+    assert results[0]["duration_seconds"] == 0.12
+
 def test_extract_failure_message_returns_assertion_error():
     details = (
         "CALL FAILURE:\n"
