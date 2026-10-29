@@ -136,6 +136,36 @@ def test_build_json_report_omits_metadata_when_not_provided():
 
     assert "metadata" not in report
 
+
+def test_write_json_report_handles_empty_session(
+    monkeypatch, tmp_path
+):
+    import json
+    from types import SimpleNamespace
+
+    report_path = tmp_path / "reports" / "praman-report.json"
+    monkeypatch.setenv("PRAMAN_REPORT_PATH", str(report_path))
+
+    session = SimpleNamespace(
+        config=SimpleNamespace(_praman_test_results=[])
+    )
+
+    pytest_plugin.pytest_sessionfinish(session, exitstatus=5)
+
+    saved_report = json.loads(
+        report_path.read_text(encoding="utf-8")
+    )
+
+    assert saved_report["summary"] == {
+        "total": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+    }
+    assert saved_report["tests"] == []
+    assert saved_report["exit_status"] == 5
+    assert saved_report["generated_at"].endswith("+00:00")
+
 def test_write_json_report_creates_report_file(
     monkeypatch, tmp_path
 ):
