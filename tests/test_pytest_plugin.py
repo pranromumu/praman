@@ -308,6 +308,52 @@ def test_capture_failure_screenshot_avoids_filename_collisions(
 
     assert first_path != second_path
 
+
+def test_setup_skip_is_recorded_in_json_results():
+    from types import SimpleNamespace
+
+    item = SimpleNamespace(
+        nodeid="tests/test_checkout.py::test_checkout",
+        _praman_phase_reports={},
+        config=SimpleNamespace(_praman_test_results=[]),
+    )
+
+    setup_report = SimpleNamespace(
+        when="setup",
+        failed=False,
+        skipped=True,
+        longrepr="Skipped: prerequisite is unavailable",
+        duration=0.01,
+    )
+
+    teardown_report = SimpleNamespace(
+        when="teardown",
+        failed=False,
+        skipped=False,
+        longrepr=None,
+        duration=0.01,
+    )
+
+    item._praman_phase_reports["setup"] = setup_report
+
+    hook = pytest_plugin.pytest_runtest_makereport(
+        item, SimpleNamespace()
+    )
+    next(hook)
+
+    with pytest.raises(StopIteration):
+        hook.send(
+            SimpleNamespace(get_result=lambda: teardown_report)
+        )
+
+    results = item.config._praman_test_results
+
+    assert len(results) == 1
+    assert results[0]["test_id"] == item.nodeid
+    assert results[0]["outcome"] == "skipped"
+    assert results[0]["failure_details"] is None
+    assert results[0]["failure_message"] is None
+
 def test_teardown_failure_is_recorded_in_json_results():
     from types import SimpleNamespace
 
