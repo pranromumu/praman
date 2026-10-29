@@ -128,7 +128,11 @@ Both variables are required by the `praman_page` fixture.
 
 ## 6. Create your first browser smoke test
 
-Create a file named `test_praman_smoke.py` in your project directory:
+Create a folder named `tests` in your client project directory if it does not already exist.
+
+### Test 1: Verify the PRAMAN installation
+
+Create a file named `tests/test_praman_smoke.py`:
 
 ```python
 def test_praman_smoke(praman_page):
@@ -140,19 +144,26 @@ def test_praman_smoke(praman_page):
     assert praman_page.locator("h1").inner_text() == "PRAMAN Ready"
 ```
 
-This smoke test checks that the installed pytest plugin provides the fixture and that the browser can start and interact with a page. It does not require access to a public website or your application's server.
+This smoke test verifies that the installed PRAMAN Pytest plugin provides the `praman_page` fixture and that a browser can start and interact with a page.
 
-After the smoke test passes, create tests for your application. For example:
+It does not require access to a public website or a running application server.
+
+### Test 2: Test your application homepage
+
+After the smoke test passes, create another file named `tests/test_homepage.py`:
 
 ```python
 def test_homepage(praman_page):
     praman_page.goto("https://your-authorized-test-application.example")
+
     assert praman_page.locator("h1").is_visible()
 ```
 
-Replace the example URL with your application's test URL and adjust the assertions to match its expected behavior. The fixture does not automatically navigate to the configured `base_url`; tests must navigate explicitly.
+Replace the example URL with the URL of your authorized test application. Adjust the assertions to match the application's expected behavior.
 
-## 7. Run the test
+**Important:** The `praman_page` fixture does not automatically navigate to the configured `base_url`. Each test must explicitly navigate to the page it intends to test.
+
+## 7. Run the tests
 
 From your client project directory, run:
 
@@ -160,9 +171,26 @@ From your client project directory, run:
 python -m pytest -v --tb=short
 ```
 
-A successful run should report one passing test. The `--tb=short` option keeps failure tracebacks more concise while retaining useful diagnostic information.
+Pytest should discover the test files in the `tests/` directory and execute both tests.
 
-Pytest automatically discovers the installed PRAMAN plugin through its package entry point. You should not need to import `praman_page` into your test file.
+- **Smoke test:** Verifies that the `praman_page` fixture works and that the browser can interact with a page.
+- **Homepage test:** Verifies that your authorized test application is reachable and that its homepage contains a visible `h1` element.
+
+If both tests are configured correctly and pass, the test summary should report:
+
+```text
+2 passed
+```
+
+The homepage test requires a reachable application and a valid test URL. If you have not configured an application yet, you can run only the smoke test:
+
+```powershell
+python -m pytest -v --tb=short tests/test_praman_smoke.py
+```
+
+The `--tb=short` option keeps failure tracebacks concise while retaining useful diagnostic information.
+
+Pytest discovers the installed PRAMAN plugin through its package entry point. You do not need to import `praman_page` into your test file.
 
 ## 8. Verify plugin discovery
 
