@@ -20,21 +20,38 @@ def _extract_failure_message(failure_details):
     if not failure_details:
         return None
 
+    # Remove ANSI terminal color and formatting codes first.
+    cleaned_details = re.sub(
+        r"\x1b\[[0-?]*[ -/]*[@-~]",
+        "",
+        failure_details,
+    )
+
     lines = [
         line.strip()
-        for line in failure_details.splitlines()
+        for line in cleaned_details.splitlines()
         if line.strip()
     ]
 
     if not lines:
         return None
 
+    # Prefer meaningful pytest error lines, not visual diff lines.
     for line in reversed(lines):
-        if line.startswith("E "):
-            return line[2:].strip()
+        if not line.startswith("E "):
+            continue
+
+        message = line[2:].strip()
+
+        if not message:
+            continue
+
+        if message.startswith(("+ ", "- ", "? ")):
+            continue
+
+        return message
 
     return lines[-1]
-
 
 def _build_json_report(results, exit_status, metadata=None):
     """Build a structured JSON-compatible test report."""

@@ -377,3 +377,17 @@ def test_extract_failure_message_returns_none_for_empty_details():
     assert pytest_plugin._extract_failure_message(None) is None
     assert pytest_plugin._extract_failure_message("") is None
     assert pytest_plugin._extract_failure_message(" \n ") is None
+
+
+def test_extract_failure_message_ignores_ansi_colored_diff_lines():
+    details = (
+        "CALL FAILURE:\n"
+        "AssertionError: Expected page title to match\n"
+        "\x1b[31mE       AssertionError: Expected page title to match\x1b[0m\n"
+        "\x1b[32mE       + Screenshot Probe\x1b[0m\n"
+        "\x1b[31mE       - Expected Title\x1b[0m"
+    )
+
+    message = pytest_plugin._extract_failure_message(details)
+
+    assert message == "AssertionError: Expected page title to match"
