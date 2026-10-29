@@ -216,8 +216,20 @@ def test_write_json_report_handles_write_error(
 
     monkeypatch.setattr(Path, "write_text", fail_write)
 
+    existing_results = [
+        {
+            "test_id": "test_checkout",
+            "outcome": "failed",
+            "duration_seconds": 0.25,
+            "failure_details": "AssertionError: incorrect total",
+            "failure_message": "incorrect total",
+            "screenshot_path": None,
+        }
+    ]
     session = SimpleNamespace(
-        config=SimpleNamespace(_praman_test_results=[])
+        config=SimpleNamespace(
+            _praman_test_results=existing_results
+        )
     )
 
     pytest_plugin.pytest_sessionfinish(session, exitstatus=1)
@@ -225,6 +237,8 @@ def test_write_json_report_handles_write_error(
     captured = capsys.readouterr()
     assert "PRAMAN could not write JSON report" in captured.out
     assert "Permission denied" in captured.out
+    assert session.config._praman_test_results == existing_results
+    assert not report_path.exists()
 
 from types import SimpleNamespace
 from unittest.mock import Mock
