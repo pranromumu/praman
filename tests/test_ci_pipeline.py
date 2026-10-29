@@ -118,3 +118,18 @@ def test_ci_pipeline_without_cli_source():
     assert specs[0].failure_policy == FailurePolicy.REQUIRED
     assert specs[1].failure_policy == FailurePolicy.OPTIONAL
     assert specs[2].failure_policy == FailurePolicy.REQUIRED
+
+def test_ci_pipeline_selector_without_cli_source():
+    yaml = FakeConfigSource({"base_url": "https://yaml.com"})
+    env = FakeConfigSource({})
+    github = FakeConfigSource({"api_key": "test-key"})
+
+    specs = select_pipeline(
+        "ci",
+        yaml_source=yaml,
+        env_source=env,
+        github_source=github,
+    )
+
+    assert len(specs) == 3
+    assert [spec.source for spec in specs] == [yaml, env, github]
