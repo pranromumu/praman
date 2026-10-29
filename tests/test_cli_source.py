@@ -72,3 +72,15 @@ def test_multiple_values_together():
 def test_cli_source_implements_config_source():
     source = CLISource(args=[])
     assert isinstance(source, ConfigSource)
+
+def test_default_args_reads_sys_argv(monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["praman", "--browser", "firefox"],
+    )
+
+    source = CLISource()
+    result = source.get_config()
+
+    assert result == {"browser": "firefox"}
