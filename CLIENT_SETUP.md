@@ -192,7 +192,50 @@ The `--tb=short` option keeps failure tracebacks concise while retaining useful 
 
 Pytest discovers the installed PRAMAN plugin through its package entry point. You do not need to import `praman_page` into your test file.
 
-## 8. Verify plugin discovery
+## 8. Reporting and failure evidence
+
+PRAMAN writes a JSON test report when a Pytest session finishes.
+
+By default, the report is written to:
+
+```text
+artifacts/praman-report.json
+```
+
+The report includes a test summary, the Pytest exit status, and individual test results. Each test result can include its test ID, outcome, duration, failure details, a concise failure message, and a screenshot path.
+
+### Customize the report location
+
+Set `PRAMAN_REPORT_PATH` before running Pytest to choose another report path:
+
+```powershell
+$env:PRAMAN_REPORT_PATH = "artifacts/client-test-report.json"
+python -m pytest -v
+```
+
+PRAMAN creates the report's parent directory if needed.
+
+### Failure screenshots
+
+When a test's execution phase fails and the test uses the `praman_page` fixture, PRAMAN attempts to capture a full-page screenshot.
+
+By default, screenshots are saved under:
+
+```text
+artifacts/failures/
+```
+
+Set `PRAMAN_ARTIFACTS_DIR` to use a different directory:
+
+```powershell
+$env:PRAMAN_ARTIFACTS_DIR = "artifacts/browser-evidence"
+python -m pytest -v
+```
+
+The report records the screenshot path when capture succeeds. Screenshot capture can fail, so a screenshot is not guaranteed for every failed test.
+
+Keep generated reports and screenshots out of source control when they contain sensitive test data, page content, or other client information. Review the evidence before sharing it.
+## 9. Verify plugin discovery
 
 If Pytest reports that the `praman_page` fixture is unavailable, first verify that PRAMAN is installed in the same Python environment used to run Pytest:
 
@@ -210,7 +253,7 @@ Look for the PRAMAN plugin in the output.
 
 Make sure you run Pytest using the same virtual environment where you installed PRAMAN.
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 ### Error: `praman_page` fixture not found
 
@@ -247,7 +290,7 @@ Check the YAML indentation and confirm that the value of `PRAMAN_ENVIRONMENT` ma
 
 Confirm that the application URL is correct, the application is running, and the machine executing the test has network access to it.
 
-## 10. Client project structure
+## 11. Client project structure
 
 A typical client project may look like this:
 
@@ -261,7 +304,7 @@ MyClientProject/
 
 The virtual environment is local to your project. Your test files and configuration remain under your control.
 
-## 11. Security and operational notes
+## 12. Security and operational notes
 
 - Do not commit passwords, API keys, access tokens, or other secrets to Git.
 - Use environment variables or your CI platform's secret-management features for credentials.
@@ -269,7 +312,7 @@ The virtual environment is local to your project. Your test files and configurat
 - Keep the PRAMAN wheel version and Python dependencies consistent across local development and CI.
 - The example configuration uses headless Chromium. Your project's requirements may call for a different browser or environment.
 
-## 12. Getting help
+## 13. Getting help
 
 When troubleshooting, collect the following information:
 
