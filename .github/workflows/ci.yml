@@ -48,3 +48,104 @@ jobs:
             artifacts/failures/
           if-no-files-found: warn
           retention-days: 14
+
+
+  packaging:
+    name: Build and verify distributions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install build tool
+        run: python -m pip install build
+
+      - name: Build wheel and source distribution
+        run: python -m build --outdir dist
+
+      - name: Verify source distribution archive
+        run: |
+          python -c "
+          import tarfile
+          from pathlib import Path
+
+          archives = list(Path('dist').glob('*.tar.gz'))
+          assert len(archives) == 1, (
+              f'Expected one source distribution, found {len(archives)}'
+          )
+
+          with tarfile.open(archives[0], 'r:gz') as archive:
+              names = archive.getnames()
+
+          required = ('pyproject.toml', 'README.md', 'framework')
+          missing = [
+              item for item in required
+              if not any(
+                  name.endswith('/' + item) or name == item
+                  for name in names
+              )
+          ]
+
+          assert not missing, (
+              f'Source distribution is missing: {missing}'
+          )
+          print(
+              f'PASS: {archives[0]} contains all required items '
+              f'({len(names)} entries)'
+          )
+          "
+
+      - name: Create isolated verification environment
+        run: python -m venv /tmp/praman-verify-venv
+
+      - name: Install built wheel
+        run: |
+          /tmp/praman-verify-venv/bin/python -m pip install \
+            dist/*.whl pytest
+
+
+      - name: Verify installed package and plugin
+        run: |
+          cd /tmp
+          /tmp/praman-verify-venv/bin/python -c "
+          import importlib.metadata as metadata
+          import framework.api.session
+          import framework.config.settings
+          entry_points = metadata.entry_points(group='pytest11')
+          assert any(
+              ep.name == 'praman' and ep.value == 'framework.pytest_plugin'
+              for ep in entry_points
+          ), 'PRAMAN pytest plugin entry point was not found'
+          print('PASS: installed modules and pytest plugin entry point')
+          "
+
+      - name: Run external-client fixture smoke test
+        run: |
+          mkdir -p /tmp/praman-client-check
+          cat > /tmp/praman-client-check/qa-engine.yaml <<'YAML'
+          environments:
+            development:
+              base_url: "http://127.0.0.1:8000"
+              browser: chromium
+              headless: true
+              timeout: 5000
+          YAML
+          cat > /tmp/praman-client-check/test_smoke.py <<'PYTHON'
+          def test_praman_page_fixture(praman_page):
+              praman_page.set_content(
+                  "<title>PRAMAN Smoke Test</title><h1>PRAMAN Ready</h1>"
+              )
+              assert praman_page.title() == "PRAMAN Smoke Test"
+              assert praman_page.locator("h1").inner_text() == "PRAMAN Ready"
+          PYTHON
+          cd /tmp/praman-client-check
+          export PRAMAN_CONFIG_FILE=/tmp/praman-client-check/qa-engine.yaml
+          export PRAMAN_ENVIRONMENT=development
+          /tmp/praman-verify-venv/bin/python -m playwright install --with-deps chromium
+          /tmp/praman-verify-venv/bin/python -m pytest -q test_smoke.py
