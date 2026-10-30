@@ -13,7 +13,7 @@ permissions:
 jobs:
   test:
     name: Python and Playwright tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Check out repository
@@ -40,7 +40,7 @@ jobs:
 
       - name: Upload PRAMAN test evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: praman-test-evidence
           path: |
@@ -52,7 +52,7 @@ jobs:
 
   packaging:
     name: Build and verify distributions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Check out repository
