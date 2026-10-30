@@ -151,3 +151,61 @@ def test_api_settings_direct_construction_rejects_invalid_headers():
         match="must have a string value",
     ):
         ApiSettings(HEADERS={"Accept": 123})
+
+
+def test_api_settings_accepts_bearer_authentication():
+    settings = ApiSettings.from_config(
+        {
+            "authentication": {
+                "type": "bearer",
+                "token_env": "PRAMAN_API_TOKEN",
+            }
+        }
+    )
+
+    assert settings.AUTHENTICATION.TYPE == "bearer"
+    assert settings.AUTHENTICATION.TOKEN_ENV == "PRAMAN_API_TOKEN"
+
+
+def test_api_settings_defaults_to_no_authentication():
+    settings = ApiSettings.from_config()
+
+    assert settings.AUTHENTICATION is None
+
+
+def test_api_settings_rejects_unsupported_authentication_type():
+    with pytest.raises(ValueError, match="Unsupported authentication type"):
+        ApiSettings.from_config(
+            {
+                "authentication": {
+                    "type": "basic",
+                    "token_env": "PRAMAN_API_TOKEN",
+                }
+            }
+        )
+
+
+def test_api_settings_rejects_missing_token_environment_variable():
+    with pytest.raises(ValueError, match="token_env"):
+        ApiSettings.from_config(
+            {
+                "authentication": {
+                    "type": "bearer",
+                }
+            }
+        )
+
+
+def test_api_settings_rejects_authorization_header_with_authentication():
+    with pytest.raises(ValueError, match="Authorization"):
+        ApiSettings.from_config(
+            {
+                "headers": {
+                    "Authorization": "custom-value",
+                },
+                "authentication": {
+                    "type": "bearer",
+                    "token_env": "PRAMAN_API_TOKEN",
+                },
+            }
+        )

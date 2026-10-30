@@ -26,6 +26,7 @@ class HealthHandler(BaseHTTPRequestHandler):
             body = json.dumps(
                 {
                     "x_client": self.headers.get("X-Client"),
+                    "authorization": self.headers.get("Authorization"),
                 }
             ).encode("utf-8")
 
@@ -179,6 +180,7 @@ environments:
     assert header_response.status == 200
     assert header_response.json() == {
         "x_client": "praman",
+        "authorization": None,
     }
 
 
@@ -215,3 +217,41 @@ def test_api_session_disposes_context_when_session_exits(monkeypatch):
             raise RuntimeError("simulated test failure")
 
     mock_api_context.dispose.assert_called_once_with()
+
+
+def test_pytest_fixture_provides_bearer_authentication(
+    monkeypatch,
+    tmp_path,
+    local_api_server,
+    request,
+):
+    config_file = tmp_path / "qa-engine.yaml"
+
+    config_file.write_text(
+        f"""
+environments:
+  development:
+    base_url: "{local_api_server}"
+    headless: true
+    timeout: 5000
+    api:
+      authentication:
+        type: bearer
+        token_env: PRAMAN_API_TOKEN
+""".strip(),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv("PRAMAN_CONFIG_FILE", str(config_file))
+    monkeypatch.setenv("PRAMAN_ENVIRONMENT", "development")
+    monkeypatch.setenv("PRAMAN_API_TOKEN", "test-praman-token")
+
+    api = request.getfixturevalue("praman_api")
+
+    response = api.get("/headers")
+
+    assert response.status == 200
+    assert response.json() == {
+        "x_client": None,
+        "authorization": "Bearer test-praman-token",
+    }

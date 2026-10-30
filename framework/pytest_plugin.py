@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from framework.api.authentication import build_api_headers
 from framework.api.session import open_api_session
 from framework.browser.session import open_browser_page
 from framework.config.environment import Environment
@@ -154,13 +155,15 @@ def praman_api():
     """Provide an API request context using explicit Praman configuration."""
 
     settings = _load_settings()
+    headers = build_api_headers(settings.API)
 
     with open_api_session(
         settings.BASE_URL,
         timeout=settings.TIMEOUT,
-        headers=settings.API.HEADERS,
+        headers=headers,
     ) as api:
         yield api
+
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
