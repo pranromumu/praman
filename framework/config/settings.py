@@ -1,6 +1,7 @@
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from framework.config.api_settings import ApiSettings
 from framework.config.environment import Environment
 from framework.config.resolver import resolve_config
 from framework.config.pipeline_builder import build_standard_pipeline
@@ -19,6 +20,7 @@ class Settings:
     HEADLESS: bool = True
     TIMEOUT: int = 30000
     VERSION_POLICY: str = "highest"
+    API: ApiSettings = field(default_factory=ApiSettings)
 
     def get_validation_errors(
         self,
@@ -62,6 +64,9 @@ class Settings:
                 f"TIMEOUT must be an integer greater than 0, "
                 f"but got {self.TIMEOUT}."
             )
+
+        if not isinstance(self.API, ApiSettings):
+            errors.append("API must be an ApiSettings instance.")
 
         if (
             not isinstance(self.VERSION_POLICY, str)
@@ -115,14 +120,15 @@ class Settings:
             "timeout",
             "browser",
             "version_policy",
+            "api",
         }
         provided_fields = set(config.keys())
 
         unknown_fields = provided_fields - allowed_fields
 
-        for field in sorted(unknown_fields, key=str):
-            message = f"Unexpected configuration field: '{field}'"
-            if field == "baseurl":
+        for field_name in sorted(unknown_fields, key=str):
+            message = f"Unexpected configuration field: '{field_name}'"
+            if field_name == "baseurl":
                 message += " Did you mean 'base_url'?"
             errors.append(message)
 
@@ -151,6 +157,9 @@ class Settings:
 
         if "version_policy" in config:
             mapped_config["VERSION_POLICY"] = config["version_policy"]
+
+        if "api" in config:
+            mapped_config["API"] = ApiSettings.from_config(config["api"])
 
         settings = cls(**mapped_config)
 

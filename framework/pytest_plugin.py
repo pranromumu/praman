@@ -158,9 +158,9 @@ def praman_api():
     with open_api_session(
         settings.BASE_URL,
         timeout=settings.TIMEOUT,
+        headers=settings.API.HEADERS,
     ) as api:
         yield api
-
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
