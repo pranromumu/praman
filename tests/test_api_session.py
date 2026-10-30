@@ -3,6 +3,7 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import MagicMock
+from framework.api.client import ApiClient
 
 import pytest
 
@@ -140,7 +141,7 @@ def test_api_session_handles_not_found(local_api_server):
         assert "Not Found" in response.text()
 
 
-def test_pytest_fixture_provides_api_context(
+def test_pytest_fixture_provides_api_client(
     monkeypatch,
     tmp_path,
     local_api_server,
@@ -167,6 +168,7 @@ environments:
 
     api = request.getfixturevalue("praman_api")
 
+    assert isinstance(api, ApiClient)
     response = api.get("/health")
 
     assert response.status == 200

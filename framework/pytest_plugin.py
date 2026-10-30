@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
+from framework.api.client import ApiClient
 from framework.api.authentication import build_api_headers
 from framework.api.session import open_api_session
 from framework.browser.session import open_browser_page
 from framework.config.environment import Environment
 from framework.config.settings import Settings
-
 
 _REPORT_METADATA = None
 
@@ -152,8 +152,7 @@ def praman_page():
 
 @pytest.fixture
 def praman_api():
-    """Provide an API request context using explicit Praman configuration."""
-
+    """Provide a PRAMAN API client using explicit configuration."""
     settings = _load_settings()
     headers = build_api_headers(settings.API)
 
@@ -161,9 +160,8 @@ def praman_api():
         settings.BASE_URL,
         timeout=settings.TIMEOUT,
         headers=headers,
-    ) as api:
-        yield api
-
+    ) as context:
+        yield ApiClient(context)
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):

@@ -240,9 +240,11 @@ If the required environment variables are missing, the fixture raises a Pytest u
 
 ### API testing
 
-The installed PRAMAN Pytest plugin also provides the `praman_api` fixture for API requests through Playwright. Configure `PRAMAN_CONFIG_FILE` and `PRAMAN_ENVIRONMENT` as described above, then use `praman_api.get()`, `praman_api.post()`, or other supported request methods in your tests.
+The installed PRAMAN Pytest plugin provides the `praman_api` fixture, backed by PRAMAN's `ApiClient` abstraction and Playwright.
 
-See [API_TESTING.md](API_TESTING.md) for a complete example and instructions.
+Supported methods include `get()`, `post()`, `put()`, `patch()`, and `delete()`. Request options are forwarded to Playwright, and responses retain the Playwright `APIResponse` interface.
+
+See [API_TESTING.md](API_TESTING.md) for configuration, authentication, and usage examples.
 
 ### Failure screenshots
 
