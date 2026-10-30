@@ -299,7 +299,8 @@ python -m pytest -q
 
 The following results have been observed during development:
 
-- **Local test suite:** 536 tests passed in the latest verified source-distribution run.
+- **Local repository test suite:** 542 tests passed in the latest verified run using both `python -m pytest -q` and `pytest -q`.
+- **Source-distribution test suite:** 542 tests passed in the latest rebuilt source-distribution run.
 - **External client tests:** 2 tests passed using the installed wheel in an isolated Python environment.
 - **Plugin discovery:** Pytest reported `praman-0.1.0` when running the external client test.
 - **Hosted CI:** A successful GitHub Actions run was recorded for the earlier commit `5dbe6319bb5e2b99979e52f5a8fa5b2f8b35c9c9`.
