@@ -4,6 +4,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import MagicMock
 from framework.api.client import ApiClient
+from framework.api.validation import ApiResponseValidator
 
 import pytest
 
@@ -257,3 +258,35 @@ environments:
         "x_client": None,
         "authorization": "Bearer test-praman-token",
     }
+
+
+def test_api_response_validator_accepts_real_response(local_api_server):
+    with open_api_session(local_api_server) as api:
+        response = api.get("/health")
+
+        ApiResponseValidator.assert_status(response, 200)
+
+
+def test_api_response_validator_rejects_real_response_mismatch(
+    local_api_server,
+):
+    with open_api_session(local_api_server) as api:
+        response = api.get("/health")
+
+        with pytest.raises(
+            AssertionError,
+            match="Expected HTTP status 201, but received 200",
+        ):
+            ApiResponseValidator.assert_status(response, 201)
+
+def test_api_response_validator_accepts_real_response_header(
+    local_api_server,
+):
+    with open_api_session(local_api_server) as api:
+        response = api.get("/health")
+
+        ApiResponseValidator.assert_header(
+            response,
+            "Content-Type",
+            "application/json",
+        )

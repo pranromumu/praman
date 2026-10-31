@@ -120,7 +120,79 @@ def test_user_response(praman_api):
 
 The expected response structure must match the API being tested.
 
-## 6. Authentication
+## 6. Response Validation
+
+PRAMAN provides `ApiResponseValidator` for reusable API response assertions.
+
+Import it from the public API:
+
+```python
+from framework.api import ApiResponseValidator
+```
+
+### HTTP status validation
+
+Use `assert_status()` to check the expected HTTP status code:
+
+```python
+def test_health_status(praman_api):
+    response = praman_api.get("/health")
+
+    ApiResponseValidator.assert_status(response, 200)
+```
+
+The validator accepts HTTP status codes from 100 to 599, including error status codes for negative API tests.
+
+### JSON response validation
+
+Use `assert_json()` to parse and validate that the response body contains valid JSON:
+
+```python
+def test_response_contains_valid_json(praman_api):
+    response = praman_api.get("/users")
+
+    data = ApiResponseValidator.assert_json(response)
+
+    assert isinstance(data, list)
+```
+
+The method returns the parsed JSON data.
+
+### JSON field validation
+
+Use `assert_json_field()` to check a top-level field in a JSON object:
+
+```python
+def test_user_name(praman_api):
+    response = praman_api.get("/users/1")
+
+    ApiResponseValidator.assert_json_field(
+        response,
+        "name",
+        "Test User",
+    )
+```
+
+This currently supports top-level JSON object fields. Nested JSON path validation is not included.
+
+### Response header validation
+
+Use `assert_header()` to check that a response header exists and has the expected value:
+
+```python
+def test_response_content_type(praman_api):
+    response = praman_api.get("/health")
+
+    ApiResponseValidator.assert_header(
+        response,
+        "Content-Type",
+        "application/json",
+    )
+```
+
+Header names are matched case-insensitively. Header values are compared exactly.
+
+## 7. Authentication
 
 PRAMAN supports Bearer token authentication through an environment variable.
 
@@ -150,7 +222,7 @@ PRAMAN reads the token from the environment at runtime and builds the Authorizat
 
 If Bearer authentication is configured, PRAMAN expects the specified environment variable to contain a valid token.
 
-## 7. Running API Tests
+## 8. Running API Tests
 
 Run your tests with:
 
@@ -166,7 +238,7 @@ python -m pytest tests/test_api.py -v
 
 Replace `tests/test_api.py` with the actual path to your API test file.
 
-## 8. Fixture Lifecycle
+## 9. Fixture Lifecycle
 
 The installed PRAMAN Pytest plugin provides the `praman_api` fixture.
 
@@ -182,7 +254,7 @@ When a test requests this fixture, PRAMAN:
 
 You do not need to create or dispose of the underlying Playwright context manually.
 
-## 9. Current API Client Scope
+## 10. Current API Client Scope
 
 PRAMAN's `ApiClient` is a lightweight abstraction over Playwright's API request context.
 
@@ -193,5 +265,9 @@ It currently provides:
 - Playwright `APIResponse` objects as the return type.
 - Integration with PRAMAN's configured request headers and Bearer authentication.
 - Automatic API request context cleanup through the Pytest fixture.
+- Reusable HTTP status validation.
+- JSON response parsing and validation.
+- Top-level JSON object field validation.
+- Response-header validation.
 
-Advanced response validation, retry policies, and AI-assisted API failure analysis are separate development areas and should not be considered part of the current `ApiClient` functionality unless implemented and verified in a later release.
+The response validator currently supports basic reusable assertions. Nested JSON path validation, retry policies, and AI-assisted API failure analysis are not included in the current implementation.
