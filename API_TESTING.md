@@ -13,6 +13,14 @@ Before using API testing:
 - Ensure your YAML configuration defines a valid `base_url` and `timeout` for the selected environment.
 - Ensure the API endpoint is accessible from the test environment.
 
+For JSON Schema response validation, install the optional dependency:
+
+```powershell
+pip install "praman[api-schema]"
+```
+
+This extra installs the `jsonschema` package required for Draft 2020-12 validation. It is not required for the other API client features.
+
 ## 2. Configuration
 
 Set both required environment variables in PowerShell:
@@ -255,6 +263,99 @@ def test_response_content_type(praman_api):
 
 Header names are matched case-insensitively. Header values are compared exactly.
 
+### JSON Schema validation
+
+PRAMAN supports JSON Schema Draft 2020-12 response validation through `assert_json_schema()`.
+
+This allows you to validate the structure and data types of an API response against a reusable schema instead of writing individual assertions for every field.
+
+**Installation**
+
+JSON Schema validation is an optional feature. Install it with:
+
+```powershell
+pip install "praman[api-schema]"
+```
+
+You do not need this extra to use the other PRAMAN API features.
+
+**Example response**
+
+Assume the API returns:
+
+```json
+{
+    "id": 101,
+    "name": "Test User",
+    "email": "user@example.com",
+    "active": true
+}
+```
+
+**Define a JSON Schema**
+
+Pass the schema as a Python dictionary:
+
+```python
+USER_SCHEMA = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+        },
+        "name": {
+            "type": "string",
+        },
+        "email": {
+            "type": "string",
+            "format": "email",
+        },
+        "active": {
+            "type": "boolean",
+        },
+    },
+    "required": [
+        "id",
+        "name",
+        "email",
+        "active",
+    ],
+    "additionalProperties": False,
+}
+```
+
+**Validate an API response**
+
+```python
+def test_user_matches_schema(praman_api):
+    response = praman_api.get("/users/101")
+
+    ApiResponseValidator.assert_status(response, 200)
+
+    ApiResponseValidator.assert_json_schema(
+        response,
+        USER_SCHEMA,
+    )
+```
+
+The validator:
+
+1. Checks that the supplied schema is valid Draft 2020-12 JSON Schema.
+2. Parses the API response as JSON.
+3. Validates the response data against the schema.
+4. Reports all detected schema validation errors, including their JSON paths.
+
+**Validation errors**
+
+- `ImportError`: The optional `jsonschema` dependency is not installed. Install it using `pip install "praman[api-schema]"`.
+- `ValueError`: The supplied JSON Schema is invalid.
+- `AssertionError`: The response contains invalid JSON or does not conform to the supplied schema.
+
+The validator also supports JSON Schema boolean schemas (`True` and `False`).
+
+**Important:** The schema validates the response structure and data constraints. It does not independently verify that the API's business logic or returned values are correct.
+
 ## 7. Authentication
 
 PRAMAN supports Bearer token authentication through an environment variable.
@@ -333,5 +434,6 @@ It currently provides:
 - Top-level JSON object field validation.
 - Nested JSON dictionary and array path validation.
 - Response-header validation.
+- Optional JSON Schema Draft 2020-12 response validation.
 
-The response validator currently supports basic reusable assertions. Advanced nested-path syntax, retry policies, and AI-assisted API failure analysis are not included in the current implementation.
+The response validator provides reusable assertions for API response checks. Advanced retry policies, network control, and AI-assisted API failure analysis are not included in the current implementation.

@@ -1,4 +1,3 @@
-
 from typing import Any
 
 from playwright.sync_api import APIResponse
@@ -177,4 +176,75 @@ class ApiResponseValidator:
             raise AssertionError(
                 f"Expected JSON path '{path}' to be "
                 f"{expected_value!r}, but received {actual_value!r}."
+            )
+
+    @staticmethod
+    def assert_json_schema(
+        response: APIResponse,
+        schema: dict[str, Any] | bool,
+    ) -> None:
+        """Assert that the response JSON conforms to a JSON Schema.
+
+        Supports JSON Schema Draft 2020-12.
+
+        Raises:
+            ImportError: If the optional jsonschema dependency is missing.
+            ValueError: If the supplied schema is invalid.
+            AssertionError: If the response JSON does not match the schema.
+        """
+
+        try:
+            from jsonschema import Draft202012Validator
+            from jsonschema.exceptions import SchemaError
+        except ModuleNotFoundError as exc:
+            if exc.name == "jsonschema":
+                raise ImportError(
+                    "JSON Schema validation requires the optional "
+                    "dependency. Install it with: "
+                    'pip install "praman[api-schema]"'
+                ) from exc
+            raise
+
+        try:
+            Draft202012Validator.check_schema(schema)
+        except SchemaError as exc:
+            raise ValueError(
+                f"Invalid JSON Schema: {exc.message}"
+            ) from exc
+
+        data = ApiResponseValidator.assert_json(response)
+
+        validator = Draft202012Validator(schema)
+        errors = sorted(
+            validator.iter_errors(data),
+            key=lambda error: (
+                tuple(str(part) for part in error.absolute_path),
+                error.message,
+            ),
+        )
+
+        if errors:
+            error_messages = []
+
+            for error in errors:
+                error_path = "$"
+
+                for part in error.absolute_path:
+                    if isinstance(part, int):
+                        error_path += f"[{part}]"
+                    else:
+                        error_path += f"[{part!r}]"
+
+                error_messages.append(
+                    f"At {error_path}: {error.message}"
+                )
+
+            details = "\n".join(
+                f"- {message}"
+                for message in error_messages
+            )
+
+            raise AssertionError(
+                "API response does not match the JSON Schema:\n"
+                f"{details}"
             )
