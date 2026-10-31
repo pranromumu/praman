@@ -109,3 +109,72 @@ class ApiResponseValidator:
                 f"Expected response header '{name}' to be "
                 f"{expected_value!r}, but received {actual_value!r}."
             )
+
+    @staticmethod
+    def assert_json_path(
+        response: APIResponse,
+        path: str,
+        expected_value: Any,
+    ) -> None:
+        """Assert that a nested JSON value matches the expected value.
+
+        Supports dot-separated dictionary keys and list indexes.
+
+        Examples:
+            user.profile.email
+            orders.0.id
+        """
+
+        if not isinstance(path, str) or not path.strip():
+            raise ValueError("path must be a non-empty string")
+
+        path_parts = path.split(".")
+
+        if any(not part for part in path_parts):
+            raise ValueError(
+                "path must not contain empty segments"
+            )
+
+        actual_value = ApiResponseValidator.assert_json(response)
+        traversed_path = []
+
+        for part in path_parts:
+            traversed_path.append(part)
+            current_path = ".".join(traversed_path)
+
+            if isinstance(actual_value, dict):
+                if part not in actual_value:
+                    raise AssertionError(
+                        f"JSON path '{current_path}' does not exist."
+                    )
+
+                actual_value = actual_value[part]
+
+            elif isinstance(actual_value, list):
+                if not part.isdigit():
+                    raise AssertionError(
+                        f"Expected a numeric list index at "
+                        f"JSON path '{current_path}'."
+                    )
+
+                index = int(part)
+
+                if index >= len(actual_value):
+                    raise AssertionError(
+                        f"List index {index} is out of range at "
+                        f"JSON path '{current_path}'."
+                    )
+
+                actual_value = actual_value[index]
+
+            else:
+                raise AssertionError(
+                    f"Cannot continue JSON path '{current_path}': "
+                    "the current value is not an object or array."
+                )
+
+        if actual_value != expected_value:
+            raise AssertionError(
+                f"Expected JSON path '{path}' to be "
+                f"{expected_value!r}, but received {actual_value!r}."
+            )

@@ -51,7 +51,7 @@ This example assumes the configured API provides a `/health` endpoint and return
 
 ```json
 {
-  "status": "ok"
+    "status": "ok"
 }
 ```
 
@@ -156,7 +156,7 @@ def test_response_contains_valid_json(praman_api):
     assert isinstance(data, list)
 ```
 
-The method returns the parsed JSON data.
+The method returns the parsed JSON data. Invalid JSON raises an `AssertionError`.
 
 ### JSON field validation
 
@@ -173,7 +173,70 @@ def test_user_name(praman_api):
     )
 ```
 
-This currently supports top-level JSON object fields. Nested JSON path validation is not included.
+This method validates top-level JSON object fields.
+
+### Nested JSON path validation
+
+Use `assert_json_path()` to validate values inside nested JSON objects and arrays.
+
+For example, consider this API response:
+
+```json
+{
+    "user": {
+        "profile": {
+            "email": "user@example.com",
+            "age": 30
+        }
+    },
+    "orders": [
+        {
+            "id": 101
+        },
+        {
+            "id": 102
+        }
+    ]
+}
+```
+
+To validate a nested dictionary value:
+
+```python
+def test_user_email(praman_api):
+    response = praman_api.get("/users/1")
+
+    ApiResponseValidator.assert_json_path(
+        response,
+        "user.profile.email",
+        "user@example.com",
+    )
+```
+
+To validate an item inside a JSON array:
+
+```python
+def test_second_order_id(praman_api):
+    response = praman_api.get("/users/1")
+
+    ApiResponseValidator.assert_json_path(
+        response,
+        "orders.1.id",
+        102,
+    )
+```
+
+The path uses dot-separated segments:
+
+- Dictionary keys identify object properties.
+- Numeric segments identify list indexes when the current value is a list.
+- List indexes start at `0`.
+
+The validator raises an `AssertionError` when a key or index does not exist, traversal cannot continue, or the actual value differs from the expected value.
+
+An invalid or empty path raises a `ValueError`.
+
+**Current limitation:** Dictionary keys containing literal dots are not supported by this simple dot-notation format.
 
 ### Response header validation
 
@@ -268,6 +331,7 @@ It currently provides:
 - Reusable HTTP status validation.
 - JSON response parsing and validation.
 - Top-level JSON object field validation.
+- Nested JSON dictionary and array path validation.
 - Response-header validation.
 
-The response validator currently supports basic reusable assertions. Nested JSON path validation, retry policies, and AI-assisted API failure analysis are not included in the current implementation.
+The response validator currently supports basic reusable assertions. Advanced nested-path syntax, retry policies, and AI-assisted API failure analysis are not included in the current implementation.

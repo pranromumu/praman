@@ -1,3 +1,4 @@
+
 import json
 from unittest.mock import Mock
 
@@ -271,4 +272,200 @@ def test_assert_header_rejects_non_string_expected_value(
             response,
             "Content-Type",
             expected_value,
+        )
+
+
+# Nested JSON path validation tests
+
+
+@pytest.mark.parametrize(
+    ("path", "expected_value"),
+    [
+        ("user.profile.email", "user@example.com"),
+        ("user.profile.age", 30),
+        ("orders.0.id", 101),
+        ("orders.1.id", 102),
+        ("orders.0.items.1.name", "Keyboard"),
+        ("settings.enabled", True),
+        ("settings.value", None),
+        ("1", "numeric-key"),
+    ],
+)
+def test_assert_json_path_accepts_matching_value(
+    path,
+    expected_value,
+):
+    response = Mock()
+    response.json.return_value = {
+        "user": {
+            "profile": {
+                "email": "user@example.com",
+                "age": 30,
+            }
+        },
+        "orders": [
+            {
+                "id": 101,
+                "items": [
+                    {"name": "Mouse"},
+                    {"name": "Keyboard"},
+                ],
+            },
+            {"id": 102},
+        ],
+        "settings": {
+            "enabled": True,
+            "value": None,
+        },
+        "1": "numeric-key",
+    }
+
+    ApiResponseValidator.assert_json_path(
+        response,
+        path,
+        expected_value,
+    )
+
+
+def test_assert_json_path_rejects_missing_dictionary_key():
+    response = Mock()
+    response.json.return_value = {
+        "user": {"profile": {}}
+    }
+
+    with pytest.raises(
+        AssertionError,
+        match="JSON path 'user.profile.email' does not exist",
+    ):
+        ApiResponseValidator.assert_json_path(
+            response,
+            "user.profile.email",
+            "user@example.com",
+        )
+
+
+def test_assert_json_path_rejects_out_of_range_list_index():
+    response = Mock()
+    response.json.return_value = {
+        "orders": [{"id": 101}]
+    }
+
+    with pytest.raises(
+        AssertionError,
+        match="List index 2 is out of range",
+    ):
+        ApiResponseValidator.assert_json_path(
+            response,
+            "orders.2.id",
+            103,
+        )
+
+
+def test_assert_json_path_rejects_non_numeric_list_index():
+    response = Mock()
+    response.json.return_value = {
+        "orders": [{"id": 101}]
+    }
+
+    with pytest.raises(
+        AssertionError,
+        match="Expected a numeric list index",
+    ):
+        ApiResponseValidator.assert_json_path(
+            response,
+            "orders.first.id",
+            101,
+        )
+
+
+def test_assert_json_path_rejects_negative_list_index():
+    response = Mock()
+    response.json.return_value = {
+        "orders": [{"id": 101}]
+    }
+
+    with pytest.raises(
+        AssertionError,
+        match="Expected a numeric list index",
+    ):
+        ApiResponseValidator.assert_json_path(
+            response,
+            "orders.-1.id",
+            101,
+        )
+
+
+def test_assert_json_path_rejects_traversal_through_scalar():
+    response = Mock()
+    response.json.return_value = {
+        "user": {
+            "name": "Kabir"
+        }
+    }
+
+    with pytest.raises(
+        AssertionError,
+        match="the current value is not an object or array",
+    ):
+        ApiResponseValidator.assert_json_path(
+            response,
+            "user.name.first",
+            "K",
+        )
+
+
+def test_assert_json_path_rejects_wrong_value():
+    response = Mock()
+    response.json.return_value = {
+        "user": {
+            "profile": {
+                "email": "actual@example.com"
+            }
+        }
+    }
+
+    with pytest.raises(
+        AssertionError,
+        match="Expected JSON path 'user.profile.email'",
+    ):
+        ApiResponseValidator.assert_json_path(
+            response,
+            "user.profile.email",
+            "expected@example.com",
+        )
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["", "   ", None, 123],
+)
+def test_assert_json_path_rejects_invalid_path(path):
+    response = Mock()
+
+    with pytest.raises(
+        ValueError,
+        match="path must be a non-empty string",
+    ):
+        ApiResponseValidator.assert_json_path(
+            response,
+            path,
+            "value",
+        )
+
+
+@pytest.mark.parametrize(
+    "path",
+    [".user", "user.", "user..email"],
+)
+def test_assert_json_path_rejects_empty_path_segments(path):
+    response = Mock()
+
+    with pytest.raises(
+        ValueError,
+        match="path must not contain empty segments",
+    ):
+        ApiResponseValidator.assert_json_path(
+            response,
+            path,
+            "value",
         )
