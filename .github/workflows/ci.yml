@@ -124,10 +124,10 @@ jobs:
           ), 'PRAMAN pytest plugin entry point was not found'
           print('PASS: installed modules and pytest plugin entry point')
           "
-
       - name: Run external-client fixture smoke test
         run: |
           mkdir -p /tmp/praman-client-check
+
           cat > /tmp/praman-client-check/qa-engine.yaml <<'YAML'
           environments:
             development:
@@ -135,17 +135,88 @@ jobs:
               browser: chromium
               headless: true
               timeout: 5000
+              api:
+                authentication:
+                  type: bearer
+                  token_env: CLIENT_API_TOKEN
           YAML
+
           cat > /tmp/praman-client-check/test_smoke.py <<'PYTHON'
+          import json
+          import threading
+          from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+          import pytest
+
+
+          class APIHandler(BaseHTTPRequestHandler):
+              def do_GET(self):
+                  if self.path != "/health":
+                      self.send_error(404)
+                      return
+
+                  response = {
+                      "status": "healthy",
+                      "authorization": self.headers.get("Authorization"),
+                  }
+
+                  body = json.dumps(response).encode("utf-8")
+
+                  self.send_response(200)
+                  self.send_header("Content-Type", "application/json")
+                  self.send_header("Content-Length", str(len(body)))
+                  self.end_headers()
+                  self.wfile.write(body)
+
+              def log_message(self, format, *args):
+                  pass
+
+
+          @pytest.fixture(scope="session", autouse=True)
+          def local_api_server():
+              server = ThreadingHTTPServer(
+                  ("127.0.0.1", 8000),
+                  APIHandler,
+              )
+
+              thread = threading.Thread(
+                  target=server.serve_forever,
+                  daemon=True,
+              )
+              thread.start()
+
+              yield
+
+              server.shutdown()
+              server.server_close()
+              thread.join(timeout=5)
+
+
           def test_praman_page_fixture(praman_page):
               praman_page.set_content(
                   "<title>PRAMAN Smoke Test</title><h1>PRAMAN Ready</h1>"
               )
+
               assert praman_page.title() == "PRAMAN Smoke Test"
               assert praman_page.locator("h1").inner_text() == "PRAMAN Ready"
+
+
+          def test_praman_api_fixture(praman_api):
+              response = praman_api.get("/health")
+
+              assert response.status == 200
+              assert response.json() == {
+                  "status": "healthy",
+                  "authorization": "Bearer external-client-test-token",
+              }
           PYTHON
+
           cd /tmp/praman-client-check
+
           export PRAMAN_CONFIG_FILE=/tmp/praman-client-check/qa-engine.yaml
           export PRAMAN_ENVIRONMENT=development
+          export CLIENT_API_TOKEN=external-client-test-token
+
           /tmp/praman-verify-venv/bin/python -m playwright install --with-deps chromium
+
           /tmp/praman-verify-venv/bin/python -m pytest -q test_smoke.py
